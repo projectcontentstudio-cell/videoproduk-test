@@ -77,7 +77,11 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       });
 
       if (!response.ok) {
-        setError("Password salah.");
+        const data = (await response.json().catch(() => null)) as {
+          error?: string;
+        } | null;
+
+        setError(data?.error || "Password salah.");
         return;
       }
 
