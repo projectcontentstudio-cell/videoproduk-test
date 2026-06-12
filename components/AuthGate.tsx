@@ -1,10 +1,69 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 const authStorageKey = "videoproduk_auth_ok";
 const lastActiveStorageKey = "videoproduk_last_active";
 const idleTimeoutMs = 15 * 60 * 1000;
+
+function BackToHomeGuard() {
+  const pathname = usePathname();
+  const [showPrompt, setShowPrompt] = useState(false);
+
+  useEffect(() => {
+    if (pathname === "/" || pathname === "/upload") {
+      return;
+    }
+
+    window.history.pushState({ videoprodukBackGuard: true }, "", window.location.href);
+
+    function handleBack() {
+      window.history.pushState({ videoprodukBackGuard: true }, "", window.location.href);
+      setShowPrompt(true);
+    }
+
+    window.addEventListener("popstate", handleBack);
+
+    return () => {
+      window.removeEventListener("popstate", handleBack);
+    };
+  }, [pathname]);
+
+  if (!showPrompt) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/75 px-5 backdrop-blur-sm">
+      <div className="w-full max-w-sm rounded-2xl border border-primary/40 bg-slate-950 p-5 text-center shadow-glow">
+        <p className="text-lg font-black text-white">Ke halaman utama?</p>
+        <p className="mt-3 text-sm leading-6 text-slate-300">
+          Kalau tekan kembali, flow sekarang mungkin hilang. Pilih sama ada
+          teruskan di sini atau balik ke upload produk.
+        </p>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => setShowPrompt(false)}
+            className="inline-flex min-h-12 items-center justify-center rounded-full border border-border px-5 text-sm font-black text-white"
+          >
+            Kekal di sini
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              window.location.href = "/upload";
+            }}
+            className="inline-flex min-h-12 items-center justify-center rounded-full bg-primary px-5 text-sm font-black text-slate-950 shadow-glow"
+          >
+            Ke Halaman Utama
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
@@ -140,5 +199,10 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      <BackToHomeGuard />
+      {children}
+    </>
+  );
 }
