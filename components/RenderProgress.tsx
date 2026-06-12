@@ -21,6 +21,30 @@ type RenderState =
   | { status: "done"; jobId: string; progress: 100; result: RenderJobResult; error: "" }
   | { status: "error"; jobId: string; progress: number; result: null; error: string };
 
+const shopWatermarkEnabledKey = "videoproduk_shop_watermark_enabled";
+const shopWatermarkNameKey = "videoproduk_shop_watermark_name";
+
+function sanitizeShopWatermark(value: string) {
+  return value
+    .replace(/[^\w\s.-]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 32);
+}
+
+function getShopWatermarkInstruction() {
+  const isEnabled = localStorage.getItem(shopWatermarkEnabledKey) === "true";
+  const shopName = sanitizeShopWatermark(
+    localStorage.getItem(shopWatermarkNameKey) || ""
+  );
+
+  if (!isEnabled || !shopName) {
+    return "No subtitles, no on-screen text, no logo, no watermark.";
+  }
+
+  return `Preserve the subtle shop-name watermark "${shopName}" at the top center if it appears in the first frame. Do not add any other subtitles, on-screen text, logo, caption, or typography.`;
+}
+
 function getStoredScript(): GeneratedScript {
   const stored = localStorage.getItem("videoproduk_script");
 
@@ -144,7 +168,7 @@ export function RenderProgress() {
       `The main adult character must speak this Malay line naturally with visible lip movement and matching expression: "${dialogueLine}".`,
       "Use adult characters only. Do not show children, babies, toddlers, minors, or child faces.",
       "Make the mouth visibly move while speaking. Do not make the clip silent.",
-      "No subtitles, no on-screen text, no logo, no watermark."
+      getShopWatermarkInstruction()
     ].join(" ");
   }
 
@@ -170,7 +194,7 @@ export function RenderProgress() {
       `The main adult character must speak this Malay line naturally with visible lip movement and matching expression: "${solutionDialogue}".`,
       "Make the mouth visibly move while speaking. Do not make the clip silent.",
       "Use adult characters only. Do not show children, babies, toddlers, minors, or child faces.",
-      "No subtitles, no on-screen text, no logo, no watermark."
+      getShopWatermarkInstruction()
     ].join(" ");
   }
 
@@ -188,7 +212,8 @@ export function RenderProgress() {
       `The main adult character must speak this Malay line naturally with visible lip movement and matching expression: "${dialogueLine}".`,
       "Use adult characters only. Do not show children, babies, toddlers, minors, or child faces.",
       "The speaking should fit the situation in the scene. Use natural small motion: facial expression, mouth movement, gentle hand gesture, slight camera push-in.",
-      "Do not make the clip silent. No subtitles, no on-screen text, no logo, no watermark."
+      "Do not make the clip silent.",
+      getShopWatermarkInstruction()
     ].join(" ");
   }
 

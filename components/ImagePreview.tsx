@@ -21,6 +21,53 @@ type ImagePreviewState =
   | { status: "success"; images: ImageResult; error: "" }
   | { status: "error"; images: ImageResult | null; error: string };
 
+const shopWatermarkEnabledKey = "videoproduk_shop_watermark_enabled";
+const shopWatermarkNameKey = "videoproduk_shop_watermark_name";
+
+function sanitizeShopWatermark(value: string) {
+  return value
+    .replace(/[^\w\s.-]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 32);
+}
+
+function ensureShopWatermarkPreference() {
+  const storedEnabled = localStorage.getItem(shopWatermarkEnabledKey);
+
+  if (storedEnabled !== null) {
+    const storedName = localStorage.getItem(shopWatermarkNameKey) || "";
+
+    return storedEnabled === "true" ? sanitizeShopWatermark(storedName) : "";
+  }
+
+  const wantsWatermark = window.confirm(
+    "Nak letak nama kedai kecil di atas tengah image/video sebagai watermark halus?"
+  );
+
+  if (!wantsWatermark) {
+    localStorage.setItem(shopWatermarkEnabledKey, "false");
+    localStorage.removeItem(shopWatermarkNameKey);
+    return "";
+  }
+
+  const typedName = window.prompt(
+    "Masukkan nama kedai untuk watermark. Contoh: Kedai Maira"
+  );
+  const shopName = sanitizeShopWatermark(typedName || "");
+
+  if (!shopName) {
+    localStorage.setItem(shopWatermarkEnabledKey, "false");
+    localStorage.removeItem(shopWatermarkNameKey);
+    return "";
+  }
+
+  localStorage.setItem(shopWatermarkEnabledKey, "true");
+  localStorage.setItem(shopWatermarkNameKey, shopName);
+
+  return shopName;
+}
+
 function getStoredImagePayload() {
   const image = localStorage.getItem("videoproduk_product_image");
 
@@ -169,7 +216,8 @@ export function ImagePreview() {
       ...getStoredImagePayload(),
       script: getStoredScript(),
       quality: "preview",
-      style: localStorage.getItem("videoproduk_image_style") || "3d-character"
+      style: localStorage.getItem("videoproduk_image_style") || "3d-character",
+      shopWatermark: ensureShopWatermarkPreference()
     };
   }
 

@@ -36,6 +36,8 @@ function clearGeneratedFlow() {
   localStorage.removeItem("videoproduk_render_result");
   localStorage.removeItem("videoproduk_script");
   localStorage.removeItem("videoproduk_script_cache_key");
+  localStorage.removeItem("videoproduk_shop_watermark_enabled");
+  localStorage.removeItem("videoproduk_shop_watermark_name");
 }
 
 export function ProductForm() {

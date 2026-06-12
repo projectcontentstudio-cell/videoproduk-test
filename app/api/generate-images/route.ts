@@ -13,6 +13,18 @@ import { getFriendlyErrorMessage } from "@/lib/friendly-error";
 
 export const runtime = "nodejs";
 
+function sanitizeShopWatermark(value: unknown) {
+  if (typeof value !== "string") {
+    return "";
+  }
+
+  return value
+    .replace(/[^\w\s.-]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 32);
+}
+
 function parseBody(body: Partial<GenerateImagesInput>): GenerateImagesInput {
   if (!body.productName?.trim()) {
     throw new Error("Nama produk wajib diisi.");
@@ -44,7 +56,8 @@ function parseBody(body: Partial<GenerateImagesInput>): GenerateImagesInput {
     productImageMimeType: body.productImageMimeType,
     script: body.script,
     quality: body.quality === "final" ? "final" : "preview",
-    style: body.style || "3d-character"
+    style: body.style || "3d-character",
+    shopWatermark: sanitizeShopWatermark(body.shopWatermark)
   };
 }
 

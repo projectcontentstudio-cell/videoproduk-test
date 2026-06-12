@@ -18,6 +18,7 @@ export type GenerateImagesInput = {
   >;
   quality?: "preview" | "final";
   style?: string;
+  shopWatermark?: string;
 };
 
 export type GeneratedImages = {
@@ -73,6 +74,24 @@ function isEnabled(value: string | undefined) {
 
 function shouldUseGeminiImageEngine() {
   return process.env.IMAGE_ENGINE?.trim().toLowerCase() === "gemini";
+}
+
+function getShopWatermarkRule(input: Pick<GenerateImagesInput, "shopWatermark">) {
+  const watermark = input.shopWatermark?.trim();
+
+  if (!watermark) {
+    return {
+      image:
+        "Do not add any shop watermark, brand name, readable text, fake writing, caption, logo, or typography.",
+      video:
+        "Do not add subtitles, on-screen text, logos, watermarks, captions, or typography."
+    };
+  }
+
+  return {
+    image: `Add only one subtle shop-name watermark text: "${watermark}" at the top center. It must be small, semi-transparent, low contrast, and not distract from the product. Do not add any other text, fake writing, logo, caption, price, or typography.`,
+    video: `Preserve the existing subtle shop-name watermark "${watermark}" at the top center if it appears in the first frame. Do not create any other subtitles, text, logos, captions, or typography.`
+  };
 }
 
 function getVertexPredictUrl() {
@@ -1086,6 +1105,7 @@ function parseAutoPromptPlan(text: string) {
 
 function buildSingleSceneImagePrompt(input: GenerateImagesInput) {
   const method = input.script.visual_method || "problem_solution";
+  const watermarkRule = getShopWatermarkRule(input);
 
   return [
     `Create one vertical 9:16 ${getStylePrompt(input.style)} image for a TikTok Shop Malaysia seller video.`,
@@ -1098,12 +1118,14 @@ function buildSingleSceneImagePrompt(input: GenerateImagesInput) {
     "For showcase specifically: create one single coherent lifestyle scene only. Do not create a catalog layout, split-screen, collage, product-only top section, multiple color variants, floating cutout, ecommerce poster, or product grid. Show one main product naturally worn, held, placed, or displayed in the scene with an adult character or lifestyle setting.",
     "Veo safety: do not show babies, children, toddlers, minors, child faces, or child bodies. If family/baby product context is needed, show adult caregiver focus with neutral props only.",
     "Composition: polished full-bleed vertical scene, empty clean space at the top for TikTok caption, product clear in the frame with its reference color still recognizable, adult character or lifestyle context as appropriate for the selected method, Malaysian home/kitchen/work/lifestyle setting as appropriate.",
-    "Strict negatives: no extra ad text, no TikTok Shop words, no speech bubble, no captions, no price overlay, no watermark, no poster typography, no ad headline, no split layout, no collage, no multiple product variants, no floating product cutout. Product packaging details from the uploaded reference are allowed."
+    watermarkRule.image,
+    "Strict negatives: no extra ad text, no TikTok Shop words, no speech bubble, no captions, no price overlay, no poster typography, no ad headline, no split layout, no collage, no multiple product variants, no floating product cutout. Product packaging details from the uploaded reference are allowed."
   ].join(" ");
 }
 
 function buildSingleSceneVideoPrompt(input: GenerateImagesInput) {
   const method = input.script.visual_method || "problem_solution";
+  const watermarkRule = getShopWatermarkRule(input);
 
   return [
     "Create one 8-second vertical 9:16 image-to-video BASE clip using this image as the first frame.",
@@ -1115,12 +1137,13 @@ function buildSingleSceneVideoPrompt(input: GenerateImagesInput) {
     "For showcase/demo/lifestyle_use: introduce the product and begin the natural use/showcase action, leaving room for the extension to finish the benefit.",
     `The main adult character speaks/says this natural Malay line with visible lip movement and mouth movement: "${input.script.scene1_video_script || "Produk ni memang nampak sesuai untuk aku."}"`,
     "Keep the same character, same outfit, same room, and same product from the first frame. Use natural motion for 8 seconds: facial expression, mouth movement, gentle hand movement, product glance/touch when relevant, and slight camera push-in.",
-    "No subtitles, no on-screen text, no logo, no watermark."
+    watermarkRule.video
   ].join(" ");
 }
 
 function buildExtendSceneVideoPrompt(input: GenerateImagesInput) {
   const method = input.script.visual_method || "problem_solution";
+  const watermarkRule = getShopWatermarkRule(input);
 
   return [
     "EXTEND VIDEO PROMPT: Continue this exact vertical 9:16 product video from the final frame of the base clip.",
@@ -1132,7 +1155,7 @@ function buildExtendSceneVideoPrompt(input: GenerateImagesInput) {
     "Now continue into the product benefit/action. The adult character should naturally pick up, hold, wear, open, use, press, spray, point to, organize with, or demonstrate the product according to what the product actually is.",
     "Make the product action clear and specific, with natural hand movement and facial expression changing from problem/interest into relief/confidence.",
     `The main adult character speaks/says this natural Malay line with visible lip movement and mouth movement: "${input.script.scene2_video_script || input.script.cta || "Ha, ini baru senang, cepat terus boleh guna."}"`,
-    "No subtitles, no on-screen text, no logo, no watermark."
+    watermarkRule.video
   ].join(" ");
 }
 
@@ -1153,7 +1176,7 @@ function completeAutoPromptPlan(
       ? buildSingleSceneImagePrompt(input)
       : [
           plan.imagePrompt,
-          `This is the only storyboard image for the video. Follow the Gemini-selected visual method (${input.script.visual_method || "problem_solution"}), not a fixed problem-solution formula. The uploaded product must be visible and recognizable. Preserve exact dominant product color, packaging, shape, label layout, silhouette, and color blocking as clearly as possible. Do not recolor the product. If method is showcase, it must be one coherent lifestyle scene, not a catalog, split-screen, collage, product-only cutout, or multiple variants. Do not add extra ad text, poster words, price overlays, or watermark.`
+          `This is the only storyboard image for the video. Follow the Gemini-selected visual method (${input.script.visual_method || "problem_solution"}), not a fixed problem-solution formula. The uploaded product must be visible and recognizable. Preserve exact dominant product color, packaging, shape, label layout, silhouette, and color blocking as clearly as possible. Do not recolor the product. If method is showcase, it must be one coherent lifestyle scene, not a catalog, split-screen, collage, product-only cutout, or multiple variants. ${getShopWatermarkRule(input).image}`
         ].join(" ");
 
   const baseVideoPrompt =
@@ -1162,7 +1185,7 @@ function completeAutoPromptPlan(
       ? buildSingleSceneVideoPrompt(input)
       : [
           plan.videoPrompt,
-          `The clip must follow the Gemini-selected visual method (${input.script.visual_method || "problem_solution"}). This is only the base 8-second clip. It must be a complete production prompt with character, location, emotion, product visible in frame, product-specific action, and one Malay spoken line with visible lip movement.`
+          `The clip must follow the Gemini-selected visual method (${input.script.visual_method || "problem_solution"}). This is only the base 8-second clip. It must be a complete production prompt with character, location, emotion, product visible in frame, product-specific action, and one Malay spoken line with visible lip movement. ${getShopWatermarkRule(input).video}`
         ].join(" ");
   const extendPrompt = buildExtendSceneVideoPrompt(input);
 
@@ -1219,11 +1242,14 @@ Reason for method: ${input.script.visual_method_reason || "Method selected by sc
 Selected style: ${input.style || "3d-character"}
 
 Use the uploaded product/reference image to understand the product. Use the app structure above, but write the final prompt naturally like Gemini browser would.
+Shop watermark rule:
+- ${getShopWatermarkRule(input).image}
+- ${getShopWatermarkRule(input).video}
 
 Rules for image_prompt:
 - One vertical 9:16 image.
 - Cute polished 3D cartoon TikTok Shop Malaysia style if style is 3d-character.
-- No readable text, no logo, no watermark, no brand name, no fake letters.
+- Follow the shop watermark rule exactly.
 - Keep it product-ad friendly and family-safe.
 - Follow the Gemini-selected visual method from the script. Do not force problem-solution if the method is showcase, demo, or lifestyle_use.
 - For problem_solution or before_after: show customer pain plus the uploaded product clearly inside the same scene at the side / on table / within reach.
@@ -1242,7 +1268,7 @@ Rules for video_prompt:
 - Use the exact Malay dialogue line from the script. Do not replace it with a generic line.
 - Use natural small motion only.
 - Veo safety: avoid children, babies, toddlers, minors, child faces, and child bodies. Prefer adult-only scenes; for baby/kids products show only adult caregiver and neutral props.
-- No subtitles, no on-screen text, no logo, no watermark.
+- Follow the shop watermark rule exactly.
 
 Return JSON only:
 {
