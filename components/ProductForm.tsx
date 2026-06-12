@@ -43,6 +43,7 @@ function clearGeneratedFlow() {
 export function ProductForm() {
   const [productName, setProductName] = useState("");
   const [selectedStyle, setSelectedStyle] = useState("3d-character");
+  const [acceptedBetaRules, setAcceptedBetaRules] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -54,6 +55,7 @@ export function ProductForm() {
     } else {
       localStorage.setItem("videoproduk_image_style", "3d-character");
     }
+
   }, []);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -62,6 +64,11 @@ export function ProductForm() {
 
     if (!productName.trim()) {
       setError("Nama produk wajib diisi.");
+      return;
+    }
+
+    if (!acceptedBetaRules) {
+      setError("Tick persetujuan semakan hasil dahulu sebelum jana skrip.");
       return;
     }
 
@@ -165,6 +172,20 @@ export function ProductForm() {
           })}
         </div>
       </section>
+
+      <label className="flex items-start gap-3 rounded-2xl border border-amber-400/30 bg-amber-400/10 p-4 text-sm leading-6 text-amber-50">
+        <input
+          type="checkbox"
+          checked={acceptedBetaRules}
+          disabled={isSubmitting}
+          onChange={(event) => setAcceptedBetaRules(event.target.checked)}
+          className="mt-1 h-5 w-5 accent-primary"
+        />
+        <span>
+          Saya faham hasil AI perlu disemak dahulu, rupa produk mungkin tidak
+          sama 100%, dan video hanya diteruskan jika preview image sudah sesuai.
+        </span>
+      </label>
 
       {error ? (
         <div className="rounded-2xl border border-red-500/40 bg-red-500/10 p-4 text-sm font-semibold text-red-100">

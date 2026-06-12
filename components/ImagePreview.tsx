@@ -649,13 +649,13 @@ export function ImagePreview() {
         </p>
         <div className="mt-3 rounded-xl border border-primary/30 bg-primary/10 p-3">
           <p className="text-xs font-black uppercase tracking-[0.14em] text-primary">
-            Cost guard
+            Kawalan kos
           </p>
           <p className="mt-2 text-xs leading-5 text-slate-300">
             Hari ini: {usage?.imageCount ?? 0} image preview,{" "}
-            {usage?.videoCount ?? 0} video berjaya. Baki beta video credit:{" "}
-            {usage?.videoCredits ?? 0}. Jangan jana video kalau product dalam
-            image belum nampak betul.
+            {usage?.videoCount ?? 0} video berjaya. Baki video:{" "}
+            {usage?.videoCredits ?? 0}. Jangan teruskan video kalau produk
+            dalam image belum nampak betul.
           </p>
         </div>
       </div>
@@ -694,7 +694,7 @@ export function ImagePreview() {
             }
 
             const confirmed = window.confirm(
-              "Buat Video 16 saat akan guna 1 beta video credit selepas berjaya. Teruskan?"
+              "Buat Video 16 saat akan guna 1 baki video selepas berjaya. Teruskan?"
             );
 
             if (confirmed) {

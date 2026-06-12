@@ -29,8 +29,8 @@ export default function UploadPage() {
             Masukkan gambar produk yang jelas.
           </h1>
           <p className="text-sm leading-6 text-slate-300 sm:text-base">
-            Quality gate berjalan dalam browser sebelum apa-apa API dipanggil.
-            Kalau gambar gagal, sistem akan beritahu sebab dalam Bahasa Melayu.
+            Sistem akan semak gambar dahulu. Kalau gambar kurang jelas, sistem
+            akan beritahu sebab dalam Bahasa Melayu.
           </p>
         </div>
 

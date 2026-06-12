@@ -183,10 +183,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
       localStorage.setItem(authStorageKey, "true");
       localStorage.setItem(lastActiveStorageKey, String(Date.now()));
       setAllowed(true);
-
-      if (window.location.pathname === "/") {
-        window.location.href = "/upload";
-      }
+      window.location.href = "/upload";
       return;
     } catch {
       setError("Login gagal. Cuba lagi.");
