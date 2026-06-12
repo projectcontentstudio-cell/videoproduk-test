@@ -1,0 +1,5 @@
+chrome-backtest-profile/
+chrome-backtest-profile-2/
+.next/
+dev-server.log
+dev-server.err.log
