@@ -21,6 +21,7 @@ export type RenderJobPayload = {
 
 export type RenderJobResult = {
   videoUrl: string;
+  videoStoreKey?: string;
   watermarked: boolean;
   downloadable: boolean;
 };

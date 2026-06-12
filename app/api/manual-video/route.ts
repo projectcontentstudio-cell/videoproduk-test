@@ -215,9 +215,13 @@ async function saveVideoOutput(output: string) {
       throw new Error(`Download video Veo gagal. Status ${response.status}.`);
     }
 
-    const stored = await storeGeneratedVideo(
-      Buffer.from(await response.arrayBuffer())
-    );
+    const buffer = Buffer.from(await response.arrayBuffer());
+
+    if (process.env.VERCEL) {
+      return `data:video/mp4;base64,${buffer.toString("base64")}`;
+    }
+
+    const stored = await storeGeneratedVideo(buffer);
     return `/api/generated-videos/${stored.id}`;
   }
 
@@ -225,6 +229,10 @@ async function saveVideoOutput(output: string) {
     throw new Error(
       `Veo pulangkan GCS URI (${output}). Manual lab belum ada storage download untuk gs://.`
     );
+  }
+
+  if (process.env.VERCEL) {
+    return `data:video/mp4;base64,${output}`;
   }
 
   const stored = await storeGeneratedVideo(Buffer.from(output, "base64"));

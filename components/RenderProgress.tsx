@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { GeneratedScript } from "@/lib/gemini";
 import type { RenderJobResult } from "@/lib/render-types";
 import { getFriendlyErrorMessage } from "@/lib/friendly-error";
+import { storeVideoDataUrl } from "@/lib/client-video-store";
 import { ProgressBar } from "./ProgressBar";
 
 type SelectedScene = {
@@ -205,12 +206,26 @@ export function RenderProgress() {
         throw new Error(data.error || "Render gagal dimulakan.");
       }
 
-      const result = {
-        videoUrl: data.videoUrl,
+      const videoUrl = String(data.videoUrl || "");
+      const result: RenderJobResult = {
+        videoUrl,
         watermarked: true,
         downloadable: false
       };
-      localStorage.setItem("videoproduk_render_result", JSON.stringify(result));
+
+      const storedResult =
+        videoUrl.startsWith("data:video")
+          ? {
+              ...result,
+              videoUrl: "",
+              videoStoreKey: await storeVideoDataUrl(videoUrl)
+            }
+          : result;
+
+      localStorage.setItem(
+        "videoproduk_render_result",
+        JSON.stringify(storedResult)
+      );
       setState({
         status: "done",
         jobId: data.operationName || "",

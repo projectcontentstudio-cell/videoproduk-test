@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { GeneratedScript } from "@/lib/gemini";
 import type { RenderJobResult } from "@/lib/render-types";
+import { readVideoDataUrl } from "@/lib/client-video-store";
 import { VideoPlayer } from "./VideoPlayer";
 
 type DownloadState = {
@@ -17,13 +18,34 @@ export function DownloadPanel() {
   });
 
   useEffect(() => {
+    let cancelled = false;
     const result = localStorage.getItem("videoproduk_render_result");
     const script = localStorage.getItem("videoproduk_script");
+    const parsedResult = result ? (JSON.parse(result) as RenderJobResult) : null;
+    const parsedScript = script ? (JSON.parse(script) as GeneratedScript) : null;
 
     setState({
-      result: result ? (JSON.parse(result) as RenderJobResult) : null,
-      script: script ? (JSON.parse(script) as GeneratedScript) : null
+      result: parsedResult,
+      script: parsedScript
     });
+
+    if (parsedResult?.videoStoreKey && !parsedResult.videoUrl) {
+      readVideoDataUrl(parsedResult.videoStoreKey).then((videoUrl) => {
+        if (!cancelled && videoUrl) {
+          setState({
+            result: {
+              ...parsedResult,
+              videoUrl
+            },
+            script: parsedScript
+          });
+        }
+      });
+    }
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const downloadable =
