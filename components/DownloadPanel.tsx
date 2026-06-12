@@ -4,17 +4,20 @@ import { useEffect, useState } from "react";
 import type { GeneratedScript } from "@/lib/gemini";
 import type { RenderJobResult } from "@/lib/render-types";
 import { readVideoDataUrl } from "@/lib/client-video-store";
+import { getUsageSnapshot, type UsageSnapshot } from "@/lib/client-usage-store";
 import { VideoPlayer } from "./VideoPlayer";
 
 type DownloadState = {
   result: RenderJobResult | null;
   script: GeneratedScript | null;
+  usage: UsageSnapshot | null;
 };
 
 export function DownloadPanel() {
   const [state, setState] = useState<DownloadState>({
     result: null,
-    script: null
+    script: null,
+    usage: null
   });
 
   useEffect(() => {
@@ -26,7 +29,8 @@ export function DownloadPanel() {
 
     setState({
       result: parsedResult,
-      script: parsedScript
+      script: parsedScript,
+      usage: getUsageSnapshot()
     });
 
     if (parsedResult?.videoStoreKey && !parsedResult.videoUrl) {
@@ -37,7 +41,8 @@ export function DownloadPanel() {
               ...parsedResult,
               videoUrl
             },
-            script: parsedScript
+            script: parsedScript,
+            usage: getUsageSnapshot()
           });
         }
       });
@@ -62,6 +67,21 @@ export function DownloadPanel() {
         videoUrl={state.result?.videoUrl}
         watermarked={state.result?.watermarked}
       />
+
+      <div className="rounded-2xl border border-primary/30 bg-primary/10 p-5">
+        <p className="text-sm font-black text-white">
+          {state.result?.videoUrl ? "Video berjaya disimpan." : "Video belum tersedia."}
+        </p>
+        <p className="mt-2 text-sm leading-6 text-slate-300">
+          {state.result?.videoUrl
+            ? "Semak video dulu. Jika product drift atau dialog tidak sesuai, jangan guna untuk iklan final."
+            : "Sila render video dahulu. Jika render gagal kerana server busy atau token tamat, credit tidak ditolak."}
+        </p>
+        <p className="mt-3 text-xs font-semibold leading-5 text-primary">
+          Baki beta video credit: {state.usage?.videoCredits ?? 0} | Video
+          berjaya hari ini: {state.usage?.videoCount ?? 0}
+        </p>
+      </div>
 
       <div className="rounded-2xl border border-border bg-surface p-5">
         <p className="text-sm font-black text-white">Caption + Hashtags</p>
@@ -89,7 +109,7 @@ export function DownloadPanel() {
             disabled
             className="inline-flex min-h-12 w-full cursor-not-allowed items-center justify-center rounded-full bg-slate-700 px-6 text-sm font-black text-slate-300"
           >
-            Download Video
+            Download belum tersedia
           </button>
         )}
         <a

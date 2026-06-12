@@ -4,6 +4,11 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { GeneratedScript } from "@/lib/gemini";
 import { freePreviewPolicy } from "@/lib/preview-policy";
 import { getFriendlyErrorMessage } from "@/lib/friendly-error";
+import {
+  getUsageSnapshot,
+  trackImageGeneration,
+  type UsageSnapshot
+} from "@/lib/client-usage-store";
 
 type ImageResult = {
   problemImageUrl: string;
@@ -187,6 +192,8 @@ export function ImagePreview() {
     error: ""
   });
   const [timeoutCountdown, setTimeoutCountdown] = useState<number | null>(null);
+  const [usage, setUsage] = useState<UsageSnapshot | null>(null);
+  const [productApproved, setProductApproved] = useState(false);
 
   function getStoredImages() {
     const stored = localStorage.getItem("videoproduk_scene_images");
@@ -254,6 +261,8 @@ export function ImagePreview() {
         "videoproduk_scene_images",
         JSON.stringify(data.images)
       );
+      setUsage(trackImageGeneration());
+      setProductApproved(false);
       setState({ status: "success", images: data.images, error: "" });
     } catch (error) {
       if (activeRequestId.current !== requestId) {
@@ -406,6 +415,8 @@ export function ImagePreview() {
 
     localStorage.removeItem("videoproduk_scene_images");
     localStorage.removeItem("videoproduk_selected_scene");
+    setUsage(getUsageSnapshot());
+    setProductApproved(false);
     void generateProblemImage();
   }, []);
 
@@ -636,7 +647,31 @@ export function ImagePreview() {
           Disclaimer: Imej AI mungkin tidak sama 100% dengan produk sebenar.
           Semak rupa produk dulu sebelum guna untuk iklan.
         </p>
+        <div className="mt-3 rounded-xl border border-primary/30 bg-primary/10 p-3">
+          <p className="text-xs font-black uppercase tracking-[0.14em] text-primary">
+            Cost guard
+          </p>
+          <p className="mt-2 text-xs leading-5 text-slate-300">
+            Hari ini: {usage?.imageCount ?? 0} image preview,{" "}
+            {usage?.videoCount ?? 0} video berjaya. Baki beta video credit:{" "}
+            {usage?.videoCredits ?? 0}. Jangan jana video kalau product dalam
+            image belum nampak betul.
+          </p>
+        </div>
       </div>
+
+      <label className="flex items-start gap-3 rounded-2xl border border-border bg-surface p-4 text-sm leading-6 text-slate-200">
+        <input
+          type="checkbox"
+          checked={productApproved}
+          onChange={(event) => setProductApproved(event.target.checked)}
+          className="mt-1 h-5 w-5 accent-primary"
+        />
+        <span>
+          Saya sudah semak image ini. Produk nampak cukup jelas dan sesuai
+          untuk dijadikan video.
+        </span>
+      </label>
 
       <div className="grid gap-3 sm:grid-cols-2">
         <button
@@ -651,8 +686,15 @@ export function ImagePreview() {
           type="button"
           disabled={state.status === "loading-problem" || state.status === "loading-solution"}
           onClick={() => {
+            if (!productApproved) {
+              window.alert(
+                "Semak dan tick dulu bahawa produk dalam image sudah nampak betul. Ini elak bazir kos video."
+              );
+              return;
+            }
+
             const confirmed = window.confirm(
-              "Buat Video 16 saat akan guna kredit video tambahan. Teruskan?"
+              "Buat Video 16 saat akan guna 1 beta video credit selepas berjaya. Teruskan?"
             );
 
             if (confirmed) {

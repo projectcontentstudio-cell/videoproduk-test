@@ -5,6 +5,12 @@ import type { GeneratedScript } from "@/lib/gemini";
 import type { RenderJobResult } from "@/lib/render-types";
 import { getFriendlyErrorMessage } from "@/lib/friendly-error";
 import { storeVideoDataUrl } from "@/lib/client-video-store";
+import {
+  canStartVideoGeneration,
+  getUsageSnapshot,
+  trackSuccessfulVideoGeneration,
+  type UsageSnapshot
+} from "@/lib/client-usage-store";
 import { ProgressBar } from "./ProgressBar";
 
 type SelectedScene = {
@@ -143,6 +149,7 @@ export function RenderProgress() {
     result: null,
     error: ""
   });
+  const [usage, setUsage] = useState<UsageSnapshot | null>(null);
   const [progressTimerId, setProgressTimerId] = useState<number | null>(null);
   const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null);
 
@@ -257,6 +264,7 @@ export function RenderProgress() {
   useEffect(() => {
     localStorage.setItem("videoproduk_restore_preview", "true");
     setSelectedScene(getSelectedScene());
+    setUsage(getUsageSnapshot());
   }, []);
 
   async function startRender() {
@@ -273,8 +281,21 @@ export function RenderProgress() {
       return;
     }
 
+    if (!canStartVideoGeneration()) {
+      setUsage(getUsageSnapshot());
+      setState({
+        status: "error",
+        jobId: "",
+        progress: 0,
+        result: null,
+        error:
+          "Beta video credit sudah habis. Untuk jualan sebenar, sambungkan payment/credit system dulu."
+      });
+      return;
+    }
+
     const confirmed = window.confirm(
-      "Render video 16 saat akan jana base 8s dan sambung video. Teruskan?"
+      "Render video 16 saat akan jana base 8s dan sambung video. Credit hanya ditolak jika video berjaya. Teruskan?"
     );
 
     if (!confirmed) {
@@ -380,6 +401,7 @@ export function RenderProgress() {
         "videoproduk_render_result",
         JSON.stringify(storedResult)
       );
+      setUsage(trackSuccessfulVideoGeneration());
       setState({
         status: "done",
         jobId: data.operationName || "",
@@ -453,6 +475,16 @@ export function RenderProgress() {
           Sistem akan jana base 8 saat, kemudian sambung video supaya final
           jadi sekitar 16 saat. Output free tier masih preview.
         </p>
+        <div className="mt-4 rounded-xl border border-primary/30 bg-primary/10 p-3">
+          <p className="text-xs font-black uppercase tracking-[0.14em] text-primary">
+            Credit & cost guard
+          </p>
+          <p className="mt-2 text-xs leading-5 text-slate-300">
+            Baki beta video credit: {usage?.videoCredits ?? 0}. Anggaran kasar:
+            16s Veo Lite dengan audio sekitar USD0.80 sebelum tax/exchange.
+            Credit hanya ditolak bila video berjaya disimpan.
+          </p>
+        </div>
         <div className="mt-5">
           <ProgressBar value={state.progress} />
         </div>
