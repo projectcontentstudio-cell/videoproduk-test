@@ -44,6 +44,7 @@ Pilihan method:
 Scene utama mesti ikut visual_method. Produk sebenar mesti ada dalam frame dan jelas.
 Video akan bermula dari image itu dan character akan berinteraksi dengan produk ikut method yang dipilih.
 Veo safety rule: jangan masukkan baby, kanak-kanak, toddler, minor, atau muka child dalam image/video prompt. Untuk produk baby/kids, guna adult caregiver sahaja, prop seperti bowl/beg/mainan boleh ada, tapi tiada child face/body sebagai watak utama.
+Dialog wajib: Gemini mesti cipta satu line dialog Bahasa Melayu untuk video. Jangan buat video silent. Setiap scene*_video_prompt mesti mengandungi exact dialogue line, perkataan speak/says, visible lip movement, mouth movement, dan arahan action yang sesuai dengan visual_method.
 Format output JSON sahaja - tiada teks lain.
 
 JSON format:
@@ -94,6 +95,18 @@ function countWords(value: string) {
   return value.trim().split(/\s+/).filter(Boolean).length;
 }
 
+function hasSpeechInstruction(prompt: string, dialogueLine: string) {
+  const source = prompt.toLowerCase();
+  const dialogue = dialogueLine.trim().toLowerCase();
+
+  return (
+    dialogue.length >= 25 &&
+    source.includes(dialogue) &&
+    /\b(speak|speaks|says|say|dialogue|spoken)\b/i.test(prompt) &&
+    /lip movement|mouth movement|mouth visibly move/i.test(prompt)
+  );
+}
+
 async function readVertexError(response: Response) {
   const text = await response.text();
   const compact = text.replace(/\s+/g, " ").trim();
@@ -121,20 +134,28 @@ export function validateGeneratedScript(script: Partial<GeneratedScript>) {
     script.visual_method_reason = "Method ini dipilih berdasarkan jenis produk.";
   }
 
-  if (!script.scene1_video_script && script.scene1_subtitle) {
-    script.scene1_video_script = script.scene1_subtitle;
-  }
-
-  if (!script.scene2_video_script && script.scene2_subtitle) {
-    script.scene2_video_script = script.scene2_subtitle;
-  }
-
   if (!script.scene1_video_prompt && script.scene1_video_script) {
     script.scene1_video_prompt = `Create one 8-second vertical 9:16 image-to-video clip from this problem image. The main adult character says in Malay with visible lip movement: "${script.scene1_video_script}". Show natural small motion and matching frustrated expression. No subtitles, no on-screen text, no logo.`;
   }
 
   if (!script.scene2_video_prompt && script.scene2_video_script) {
     script.scene2_video_prompt = `Create one 8-second vertical 9:16 image-to-video clip from this solution image. The main adult character says in Malay with visible lip movement: "${script.scene2_video_script}". Show natural small motion, product demo action if relevant, and relieved expression. No subtitles, no on-screen text, no logo.`;
+  }
+
+  if (
+    script.scene1_video_prompt &&
+    script.scene1_video_script &&
+    !hasSpeechInstruction(script.scene1_video_prompt, script.scene1_video_script)
+  ) {
+    script.scene1_video_prompt = `${script.scene1_video_prompt} The main adult character must clearly speak this exact Malay dialogue line with visible lip movement and mouth movement: "${script.scene1_video_script}". Do not make the video silent.`;
+  }
+
+  if (
+    script.scene2_video_prompt &&
+    script.scene2_video_script &&
+    !hasSpeechInstruction(script.scene2_video_prompt, script.scene2_video_script)
+  ) {
+    script.scene2_video_prompt = `${script.scene2_video_prompt} The main adult character must clearly speak this exact Malay dialogue line with visible lip movement and mouth movement: "${script.scene2_video_script}". Do not make the video silent.`;
   }
 
   const requiredFields: Array<keyof GeneratedScript> = [

@@ -56,6 +56,40 @@ function getSelectedScene(): SelectedScene | null {
   return JSON.parse(stored) as SelectedScene;
 }
 
+function shouldUseProductAction(script: GeneratedScript) {
+  return Boolean(
+    script.visual_method && script.visual_method !== "problem_solution"
+  );
+}
+
+function normalizeSceneForVideo(
+  scene: SelectedScene,
+  script: GeneratedScript
+): SelectedScene {
+  if (!shouldUseProductAction(script)) {
+    return scene;
+  }
+
+  return {
+    ...scene,
+    sceneKind: "solution",
+    sceneDescription:
+      script.scene2_description ||
+      scene.sceneDescription ||
+      "Product showcase scene.",
+    dialogueLine:
+      script.scene2_video_script ||
+      script.scene2_subtitle ||
+      script.cta ||
+      scene.dialogueLine ||
+      "Produk ni memang nampak kemas dan mudah digunakan.",
+    manualVideoPrompt:
+      script.scene2_video_prompt ||
+      scene.manualVideoPrompt ||
+      "Create one 8-second vertical 9:16 product showcase image-to-video clip."
+  };
+}
+
 export function RenderProgress() {
   const [selectedScene, setSelectedScene] = useState<SelectedScene | null>(null);
   const [state, setState] = useState<RenderState>({
@@ -177,9 +211,11 @@ export function RenderProgress() {
     }
 
     const script = getStoredScript();
+    const normalizedScene = normalizeSceneForVideo(scene, script);
     const videoPrompt = enforceEightSecondSpeechPrompt(
-      scene.manualVideoPrompt || buildFallbackVideoPrompt(scene, script),
-      scene,
+      normalizedScene.manualVideoPrompt ||
+        buildFallbackVideoPrompt(normalizedScene, script),
+      normalizedScene,
       script
     );
     setState({
