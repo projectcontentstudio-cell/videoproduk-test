@@ -12,15 +12,25 @@ function BackToHomeGuard() {
   const [showPrompt, setShowPrompt] = useState(false);
 
   useEffect(() => {
-    if (pathname === "/" || pathname === "/upload") {
+    if (pathname === "/") {
       return;
     }
 
-    window.history.pushState({ videoprodukBackGuard: true }, "", window.location.href);
+    const guardedUrl = window.location.href;
+    const guardState = {
+      ...(window.history.state || {}),
+      videoprodukBackGuard: true,
+      videoprodukPath: pathname
+    };
+
+    window.history.replaceState(guardState, "", guardedUrl);
+    window.history.pushState(guardState, "", guardedUrl);
 
     function handleBack() {
-      window.history.pushState({ videoprodukBackGuard: true }, "", window.location.href);
       setShowPrompt(true);
+      window.setTimeout(() => {
+        window.history.pushState(guardState, "", guardedUrl);
+      }, 0);
     }
 
     window.addEventListener("popstate", handleBack);
@@ -53,6 +63,11 @@ function BackToHomeGuard() {
           <button
             type="button"
             onClick={() => {
+              if (pathname === "/upload") {
+                setShowPrompt(false);
+                return;
+              }
+
               window.location.href = "/upload";
             }}
             className="inline-flex min-h-12 items-center justify-center rounded-full bg-primary px-5 text-sm font-black text-slate-950 shadow-glow"
