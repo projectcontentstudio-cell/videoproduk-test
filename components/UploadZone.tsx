@@ -17,6 +17,7 @@ function clearGeneratedFlow() {
   localStorage.removeItem("videoproduk_scene_images");
   localStorage.removeItem("videoproduk_selected_scene");
   localStorage.removeItem("videoproduk_render_result");
+  localStorage.removeItem("videoproduk_script_cache_key");
 }
 
 function getImageFromFile(file: File) {

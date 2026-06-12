@@ -15,6 +15,17 @@ function clearPreviewFlow() {
   localStorage.removeItem("videoproduk_render_result");
 }
 
+function getScriptCacheKey(productName: string, style: string) {
+  const image = localStorage.getItem("videoproduk_product_image") || "";
+  return JSON.stringify({
+    productName,
+    style,
+    imageLength: image.length,
+    imageHead: image.slice(0, 80),
+    imageTail: image.slice(-80)
+  });
+}
+
 function getStoredImagePayload() {
   const image = localStorage.getItem("videoproduk_product_image");
 
@@ -77,6 +88,10 @@ export function ScriptPreview() {
 
       clearPreviewFlow();
       localStorage.setItem("videoproduk_script", JSON.stringify(data.script));
+      localStorage.setItem(
+        "videoproduk_script_cache_key",
+        getScriptCacheKey(productName, style)
+      );
       setState({ status: "success", script: data.script, error: "" });
     } catch (error) {
       setState({
@@ -88,6 +103,22 @@ export function ScriptPreview() {
   }
 
   useEffect(() => {
+    const productName =
+      localStorage.getItem("videoproduk_product_name") || "Mini Chopper Pro";
+    const style = localStorage.getItem("videoproduk_image_style") || "3d-character";
+    const storedScript = localStorage.getItem("videoproduk_script");
+    const storedCacheKey = localStorage.getItem("videoproduk_script_cache_key");
+    const currentCacheKey = getScriptCacheKey(productName, style);
+
+    if (storedScript && storedCacheKey === currentCacheKey) {
+      setState({
+        status: "success",
+        script: JSON.parse(storedScript) as GeneratedScript,
+        error: ""
+      });
+      return;
+    }
+
     void generateScript();
   }, []);
 

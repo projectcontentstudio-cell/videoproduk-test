@@ -35,6 +35,7 @@ function clearGeneratedFlow() {
   localStorage.removeItem("videoproduk_selected_scene");
   localStorage.removeItem("videoproduk_render_result");
   localStorage.removeItem("videoproduk_script");
+  localStorage.removeItem("videoproduk_script_cache_key");
 }
 
 export function ProductForm() {
