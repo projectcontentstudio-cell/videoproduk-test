@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const authStorageKey = "videoproduk_auth_ok";
 const lastActiveStorageKey = "videoproduk_last_active";
 const idleTimeoutMs = 15 * 60 * 1000;
+const backGuardDepth = 8;
 
 function BackToHomeGuard() {
   const pathname = usePathname();
@@ -17,19 +18,39 @@ function BackToHomeGuard() {
     }
 
     const guardedUrl = window.location.href;
-    const guardState = {
+    const guardStateBase = {
       ...(window.history.state || {}),
       videoprodukBackGuard: true,
       videoprodukPath: pathname
     };
 
-    window.history.replaceState(guardState, "", guardedUrl);
-    window.history.pushState(guardState, "", guardedUrl);
+    function fillBackGuard() {
+      for (let index = 0; index < backGuardDepth; index += 1) {
+        window.history.pushState(
+          {
+            ...guardStateBase,
+            videoprodukGuardIndex: index
+          },
+          "",
+          guardedUrl
+        );
+      }
+    }
+
+    window.history.replaceState(
+      {
+        ...guardStateBase,
+        videoprodukGuardIndex: -1
+      },
+      "",
+      guardedUrl
+    );
+    fillBackGuard();
 
     function handleBack() {
       setShowPrompt(true);
       window.setTimeout(() => {
-        window.history.pushState(guardState, "", guardedUrl);
+        fillBackGuard();
       }, 0);
     }
 
