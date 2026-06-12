@@ -52,6 +52,8 @@ function getStoredScript(): Pick<
   | "scene1_description"
   | "scene1_video_script"
   | "scene2_description"
+  | "scene2_video_script"
+  | "cta"
 > {
   const stored = localStorage.getItem("videoproduk_script");
 
@@ -61,7 +63,9 @@ function getStoredScript(): Pick<
       visual_method_reason: "Fallback bila skrip belum tersedia.",
       scene1_description: "Dapur sibuk dan bahan belum dipotong.",
       scene1_video_script: "Aduh, kerja ni memang makan masa betul.",
-      scene2_description: "Produk digunakan sebagai solusi yang cepat."
+      scene2_description: "Produk digunakan sebagai solusi yang cepat.",
+      scene2_video_script: "Ha, guna ni kerja terus jadi senang.",
+      cta: "Klik beg kuning sekarang."
     };
   }
 
@@ -72,7 +76,9 @@ function getStoredScript(): Pick<
     visual_method_reason: script.visual_method_reason,
     scene1_description: script.scene1_description,
     scene1_video_script: script.scene1_video_script,
-    scene2_description: script.scene2_description
+    scene2_description: script.scene2_description,
+    scene2_video_script: script.scene2_video_script,
+    cta: script.cta
   };
 }
 
@@ -466,7 +472,7 @@ export function ImagePreview() {
                 onClick={() => selectSceneForVideo(images.problemImageUrl, "problem")}
                 className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-primary px-4 text-sm font-black text-primary"
               >
-                Jana Video 8s
+                Jana Video 16s
               </button>
             </PreviewCard>
           </div>
@@ -545,7 +551,7 @@ export function ImagePreview() {
             onClick={() => selectSceneForVideo(images.problemImageUrl, "problem")}
             className="inline-flex min-h-11 w-full items-center justify-center rounded-full border border-primary px-4 text-sm font-black text-primary"
           >
-            Jana Video 8s
+            Jana Video 16s
           </button>
         </PreviewCard>
       </div>
@@ -576,7 +582,7 @@ export function ImagePreview() {
         <p className="mt-1 text-sm leading-6 text-slate-300">
           Sistem sekarang jana satu image sahaja: problem scene dengan produk
           dalam frame. Video guna image ini sebagai first frame dan prompt
-          akan arahkan character ambil/guna produk dalam 8 saat.
+          akan arahkan character ambil/guna produk dalam 16 saat.
         </p>
         <p className="mt-3 rounded-xl border border-amber-400/30 bg-amber-400/10 p-3 text-xs font-semibold leading-5 text-amber-100">
           Disclaimer: Imej AI mungkin tidak sama 100% dengan produk sebenar.
@@ -598,7 +604,7 @@ export function ImagePreview() {
           disabled={state.status === "loading-problem" || state.status === "loading-solution"}
           onClick={() => {
             const confirmed = window.confirm(
-              "Buat Video 8 saat akan guna 1 kredit. Teruskan?"
+              "Buat Video 16 saat akan guna kredit video tambahan. Teruskan?"
             );
 
             if (confirmed) {
@@ -607,7 +613,7 @@ export function ImagePreview() {
           }}
           className="inline-flex min-h-12 items-center justify-center rounded-full bg-primary px-6 text-sm font-black text-slate-950 shadow-glow disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Buat Video 8s
+          Buat Video 16s
         </button>
       </div>
     </div>

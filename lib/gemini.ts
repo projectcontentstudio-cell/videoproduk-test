@@ -42,9 +42,11 @@ Pilihan method:
 - before_after: untuk produk yang ada transformasi jelas, contoh cleaner, skincare non-medical, organizer.
 - lifestyle_use: untuk produk harian yang lebih sesuai tunjuk situasi guna natural.
 Scene utama mesti ikut visual_method. Produk sebenar mesti ada dalam frame dan jelas.
+Video final sekarang sekitar 16 saat: sistem jana base 8 saat dari image, kemudian sambung video dengan Veo extend. Scene1 video prompt ialah arahan base 8 saat. Scene2 video prompt mesti ditulis sebagai continuation prompt dari final frame scene1, bukan image baru.
 Video akan bermula dari image itu dan character akan berinteraksi dengan produk ikut method yang dipilih.
 Veo safety rule: jangan masukkan baby, kanak-kanak, toddler, minor, atau muka child dalam image/video prompt. Untuk produk baby/kids, guna adult caregiver sahaja, prop seperti bowl/beg/mainan boleh ada, tapi tiada child face/body sebagai watak utama.
 Dialog wajib: Gemini mesti cipta satu line dialog Bahasa Melayu untuk video. Jangan buat video silent. Setiap scene*_video_prompt mesti mengandungi exact dialogue line, perkataan speak/says, visible lip movement, mouth movement, dan arahan action yang sesuai dengan visual_method.
+Video prompt wajib lengkap seperti prompt production, bukan ayat pendek. Wajib nyatakan: watak utama, lokasi, emosi, aksi tangan/badan, produk jelas dalam frame, apa character buat terhadap produk, timing/motion 8 saat untuk scene1, dan no subtitles/no text/no logo. Contoh style: "A 3D cartoon female character is sitting at a desk in a brightly lit room, fanning herself vigorously with her hand, sweating visibly..., a dark blue portable mini fan matching the product image is clearly visible on the desk..., she looks at the fan with hope. The character speaks/says, \"...\" Visible lip movement, mouth movement, natural motion for 8 seconds. No subtitles, no text, no logo."
 Format output JSON sahaja - tiada teks lain.
 
 JSON format:
@@ -54,12 +56,12 @@ JSON format:
   hook: string (max 10 words, grab attention, ada masalah relatable),
   scene1_description: string (describe the single image scene for image AI based on visual_method; product must be visible and clear in frame),
   scene1_subtitle: string (max 8 words shown on screen),
-  scene1_video_script: string (natural Malay spoken dialogue for video scene 1, minimum 25 characters, max 18 words, based on visual_method),
-  scene1_video_prompt: string (English Veo image-to-video prompt for the single image, must include the Malay spoken dialogue, visible lip movement, natural motion, 8 seconds, timing/action based on visual_method, no subtitles/text/logo),
+  scene1_video_script: string (natural Malay spoken dialogue for base video, minimum 25 characters, max 18 words, based on visual_method),
+  scene1_video_prompt: string (long English Veo image-to-video production prompt for the single image, must include character, location, emotion, product clearly visible, product-specific action, the Malay spoken dialogue, visible lip movement, mouth movement, natural motion for 8 seconds, no subtitles/text/logo),
   scene2_description: string (describe solution scene with product),
   scene2_subtitle: string (max 8 words shown on screen),
-  scene2_video_script: string (natural Malay spoken dialogue for video scene 2, minimum 25 characters, max 18 words, based on the solution/product),
-  scene2_video_prompt: string (English Veo image-to-video prompt for scene 2, must include the Malay spoken dialogue, visible lip movement, natural motion, 8 seconds, no subtitles/text/logo),
+  scene2_video_script: string (natural Malay spoken dialogue for continuation video, minimum 25 characters, max 18 words, based on the solution/product),
+  scene2_video_prompt: string (long English Veo extend-video continuation prompt from the final frame of base video, must continue same character/product/location/style, include product-specific demo/benefit action, say exactly what changes in the continuation, include the Malay spoken dialogue, visible lip movement, mouth movement, natural motion, no subtitles/text/logo),
   cta: string (max 8 words, urgency),
   caption: string (2-3 sentences natural BM for TikTok post),
   hashtags: array of 5 strings
@@ -139,7 +141,7 @@ export function validateGeneratedScript(script: Partial<GeneratedScript>) {
   }
 
   if (!script.scene2_video_prompt && script.scene2_video_script) {
-    script.scene2_video_prompt = `Create one 8-second vertical 9:16 image-to-video clip from this solution image. The main adult character says in Malay with visible lip movement: "${script.scene2_video_script}". Show natural small motion, product demo action if relevant, and relieved expression. No subtitles, no on-screen text, no logo.`;
+    script.scene2_video_prompt = `Continue this exact vertical 9:16 product video from the final frame into the solution or product demo moment. Keep the same adult character, same product, same location, same lighting, and same camera style. The main adult character says in Malay with visible lip movement: "${script.scene2_video_script}". Show natural product interaction, clear benefit, relieved expression, and slight camera push-in. No subtitles, no on-screen text, no logo.`;
   }
 
   if (
@@ -188,27 +190,27 @@ export function validateGeneratedScript(script: Partial<GeneratedScript>) {
   }
 
   if (countWords(script.scene1_subtitle as string) > 8) {
-    throw new Error("Subtitle scene 1 mesti maksimum 8 perkataan.");
+    throw new Error("Subtitle base mesti maksimum 8 perkataan.");
   }
 
   if (countWords(script.scene2_subtitle as string) > 8) {
-    throw new Error("Subtitle scene 2 mesti maksimum 8 perkataan.");
+    throw new Error("Subtitle sambungan mesti maksimum 8 perkataan.");
   }
 
   if ((script.scene1_video_script as string).trim().length < 25) {
-    throw new Error("Video script scene 1 mesti minimum 25 aksara.");
+    throw new Error("Dialog base video mesti minimum 25 aksara.");
   }
 
   if ((script.scene2_video_script as string).trim().length < 25) {
-    throw new Error("Video script scene 2 mesti minimum 25 aksara.");
+    throw new Error("Dialog sambungan video mesti minimum 25 aksara.");
   }
 
   if (countWords(script.scene1_video_script as string) > 18) {
-    throw new Error("Video script scene 1 mesti maksimum 18 perkataan.");
+    throw new Error("Dialog base video mesti maksimum 18 perkataan.");
   }
 
   if (countWords(script.scene2_video_script as string) > 18) {
-    throw new Error("Video script scene 2 mesti maksimum 18 perkataan.");
+    throw new Error("Dialog sambungan video mesti maksimum 18 perkataan.");
   }
 
   if (countWords(script.cta as string) > 8) {
@@ -234,7 +236,7 @@ export async function generateScriptWithGemini(input: GenerateScriptInput) {
       scene2_subtitle: "Ni terus siap cepat",
       scene2_video_script: "Ha, guna ni kerja terus jadi senang.",
       scene2_video_prompt:
-        'Create one 8-second vertical 9:16 image-to-video clip from this solution image. The adult character says in Malay with visible lip movement: "Ha, guna ni kerja terus jadi senang." Show relieved happy expression, product demo motion, and slight camera push-in. No subtitles, no on-screen text, no logo.',
+        'Continue this exact vertical 9:16 product video from the final frame into the solution/product demo moment. Keep the same adult character, product, kitchen, lighting, and camera style. The adult character says in Malay with visible lip movement: "Ha, guna ni kerja terus jadi senang." Show relieved happy expression, clear product demo motion, and slight camera push-in. No subtitles, no on-screen text, no logo.',
       cta: "Klik beg kuning sekarang!",
       caption: `${input.productName} ni memang sesuai kalau korang nak kerja dapur jadi cepat. Boleh check dekat beg kuning sekarang.`,
       hashtags: ["#TikTokShopMY", "#BarangDapur", "#RacunTikTok", "#ShopeeFindsMY", "#VideoProduk"]

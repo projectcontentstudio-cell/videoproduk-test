@@ -42,8 +42,8 @@ export default function PreviewPage() {
           </h1>
           <p className="max-w-2xl text-sm leading-6 text-slate-300">
             AI jana satu image Problem dengan produk dalam frame. Image ini
-            jadi first frame untuk video 8 saat: susah, nampak produk, ambil,
-            cuba, dan lega.
+            jadi first frame untuk video 16 saat: susah, nampak produk, ambil,
+            cuba, dan lega dalam sambungan video.
           </p>
         </div>
 

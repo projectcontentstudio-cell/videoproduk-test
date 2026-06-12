@@ -34,7 +34,7 @@ function parseBody(body: Partial<GenerateImagesInput>): GenerateImagesInput {
   }
 
   if (!body.script?.scene1_description || !body.script.scene2_description) {
-    throw new Error("Deskripsi scene 1 dan scene 2 diperlukan.");
+    throw new Error("Deskripsi base dan sambungan video diperlukan.");
   }
 
   return {

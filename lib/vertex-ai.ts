@@ -13,6 +13,8 @@ export type GenerateImagesInput = {
     | "scene1_description"
     | "scene1_video_script"
     | "scene2_description"
+    | "scene2_video_script"
+    | "cta"
   >;
   quality?: "preview" | "final";
   style?: string;
@@ -1091,11 +1093,11 @@ function buildSingleSceneImagePrompt(input: GenerateImagesInput) {
       input.script.visual_method_reason || "Use the method that best fits the product."
     }`,
     `Use this exact base scene: ${input.script.scene1_description}`,
-    `The product is ${input.productName}. The uploaded product reference must appear clearly in the same scene. Preserve the product packaging, shape, main color blocking, pack/form factor, silhouette, label layout, and overall visual identity from the reference image as clearly as possible.`,
+    `The product is ${input.productName}. The uploaded product reference must appear clearly in the same scene. Preserve the exact main color, color blocking, shape, pack/form factor, silhouette, label layout, and overall visual identity from the reference image as clearly as possible. Do not recolor the product. If the reference product is dark blue, black, pink, white, or any other color, keep that same dominant color on the product.`,
     "Follow the selected visual method, not a fixed problem-solution formula. If the method is problem_solution or before_after, show the customer pain with the product visible nearby. If the method is showcase, make the product the attractive hero in a lifestyle/fashion/product-focus scene. If the method is demo or lifestyle_use, show the product ready to be used naturally in context.",
     "For showcase specifically: create one single coherent lifestyle scene only. Do not create a catalog layout, split-screen, collage, product-only top section, multiple color variants, floating cutout, ecommerce poster, or product grid. Show one main product naturally worn, held, placed, or displayed in the scene with an adult character or lifestyle setting.",
     "Veo safety: do not show babies, children, toddlers, minors, child faces, or child bodies. If family/baby product context is needed, show adult caregiver focus with neutral props only.",
-    "Composition: polished full-bleed vertical scene, empty clean space at the top for TikTok caption, product clear in the frame, adult character or lifestyle context as appropriate for the selected method, Malaysian home/kitchen/work/lifestyle setting as appropriate.",
+    "Composition: polished full-bleed vertical scene, empty clean space at the top for TikTok caption, product clear in the frame with its reference color still recognizable, adult character or lifestyle context as appropriate for the selected method, Malaysian home/kitchen/work/lifestyle setting as appropriate.",
     "Strict negatives: no extra ad text, no TikTok Shop words, no speech bubble, no captions, no price overlay, no watermark, no poster typography, no ad headline, no split layout, no collage, no multiple product variants, no floating product cutout. Product packaging details from the uploaded reference are allowed."
   ].join(" ");
 }
@@ -1104,13 +1106,32 @@ function buildSingleSceneVideoPrompt(input: GenerateImagesInput) {
   const method = input.script.visual_method || "problem_solution";
 
   return [
-    "Create one 8-second vertical 9:16 image-to-video clip using this image as the first frame.",
+    "Create one 8-second vertical 9:16 image-to-video BASE clip using this image as the first frame.",
     `Product: ${input.productName}.`,
     `Selected visual method: ${method}.`,
-    `Scene: ${input.script.scene1_description}`,
-    "Motion must follow the selected method. For problem_solution/before_after: 0-2s show pain, 2-4s notice product, 4-7s use/try product, 7-8s relief. For showcase: 0-2s introduce product, 2-5s character shows/wears/holds it, 5-8s confident close-up. For demo/lifestyle_use: 0-2s introduce context, 2-6s simple product use, 6-8s satisfying result.",
-    `The main adult character must speak this natural Malay line with visible lip movement: "${input.script.scene1_video_script || "Produk ni memang nampak sesuai untuk aku."}"`,
-    "Keep the same character, same outfit, same room, and same product from the first frame. Use only natural small motion, gentle hand movement, facial expression, and slight camera push-in.",
+    `Full scene setup: ${input.script.scene1_description}`,
+    "Write the motion like a production prompt, not a generic scene. Clearly describe the adult character, the room/location, the emotion, the hand/body action, and where the product is visible in the frame.",
+    "For problem_solution/before_after: show the pain first, make the product clearly visible nearby, then the character notices the product with hope. Do not fully solve everything in this base clip because the extension clip will continue the solution.",
+    "For showcase/demo/lifestyle_use: introduce the product and begin the natural use/showcase action, leaving room for the extension to finish the benefit.",
+    `The main adult character speaks/says this natural Malay line with visible lip movement and mouth movement: "${input.script.scene1_video_script || "Produk ni memang nampak sesuai untuk aku."}"`,
+    "Keep the same character, same outfit, same room, and same product from the first frame. Use natural motion for 8 seconds: facial expression, mouth movement, gentle hand movement, product glance/touch when relevant, and slight camera push-in.",
+    "No subtitles, no on-screen text, no logo, no watermark."
+  ].join(" ");
+}
+
+function buildExtendSceneVideoPrompt(input: GenerateImagesInput) {
+  const method = input.script.visual_method || "problem_solution";
+
+  return [
+    "EXTEND VIDEO PROMPT: Continue this exact vertical 9:16 product video from the final frame of the base clip.",
+    "The extended output should feel like one complete 16-second TikTok Shop Malaysia video, not a new scene and not a hard reset.",
+    `Product: ${input.productName}.`,
+    `Selected visual method: ${method}.`,
+    `Continuation scene: ${input.script.scene2_description || input.script.scene1_description}`,
+    "Keep the same adult character, same outfit, same room/location, same lighting, same camera angle/style, and same product appearance.",
+    "Now continue into the product benefit/action. The adult character should naturally pick up, hold, wear, open, use, press, spray, point to, organize with, or demonstrate the product according to what the product actually is.",
+    "Make the product action clear and specific, with natural hand movement and facial expression changing from problem/interest into relief/confidence.",
+    `The main adult character speaks/says this natural Malay line with visible lip movement and mouth movement: "${input.script.scene2_video_script || input.script.cta || "Ha, ini baru senang, cepat terus boleh guna."}"`,
     "No subtitles, no on-screen text, no logo, no watermark."
   ].join(" ");
 }
@@ -1132,21 +1153,28 @@ function completeAutoPromptPlan(
       ? buildSingleSceneImagePrompt(input)
       : [
           plan.imagePrompt,
-          `This is the only storyboard image for the video. Follow the Gemini-selected visual method (${input.script.visual_method || "problem_solution"}), not a fixed problem-solution formula. The uploaded product must be visible and recognizable. Preserve product packaging, shape, label layout, and color blocking as clearly as possible. If method is showcase, it must be one coherent lifestyle scene, not a catalog, split-screen, collage, product-only cutout, or multiple variants. Do not add extra ad text, poster words, price overlays, or watermark.`
+          `This is the only storyboard image for the video. Follow the Gemini-selected visual method (${input.script.visual_method || "problem_solution"}), not a fixed problem-solution formula. The uploaded product must be visible and recognizable. Preserve exact dominant product color, packaging, shape, label layout, silhouette, and color blocking as clearly as possible. Do not recolor the product. If method is showcase, it must be one coherent lifestyle scene, not a catalog, split-screen, collage, product-only cutout, or multiple variants. Do not add extra ad text, poster words, price overlays, or watermark.`
         ].join(" ");
 
-  const videoPrompt =
+  const baseVideoPrompt =
     plan.videoPrompt.length < 180 ||
     !/8-second|8 seconds|speak|lip/i.test(plan.videoPrompt)
       ? buildSingleSceneVideoPrompt(input)
       : [
           plan.videoPrompt,
-          `The clip must follow the Gemini-selected visual method (${input.script.visual_method || "problem_solution"}). The main adult character speaks one short Malay line with visible lip movement.`
+          `The clip must follow the Gemini-selected visual method (${input.script.visual_method || "problem_solution"}). This is only the base 8-second clip. It must be a complete production prompt with character, location, emotion, product visible in frame, product-specific action, and one Malay spoken line with visible lip movement.`
         ].join(" ");
+  const extendPrompt = buildExtendSceneVideoPrompt(input);
 
   return {
     imagePrompt,
-    videoPrompt
+    videoPrompt: [
+      "BASE 8s PROMPT:",
+      baseVideoPrompt,
+      "",
+      "EXTEND / CONTINUATION PROMPT FOR FINAL 16s:",
+      extendPrompt
+    ].join("\n")
   };
 }
 

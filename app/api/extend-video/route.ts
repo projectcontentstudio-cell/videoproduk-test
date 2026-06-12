@@ -10,8 +10,8 @@ import {
 export const runtime = "nodejs";
 export const maxDuration = 300;
 
-type ManualVideoPayload = {
-  referenceSceneUrl?: string;
+type ExtendVideoPayload = {
+  baseVideoGcsUri?: string;
   prompt?: string;
 };
 
@@ -22,7 +22,7 @@ function sleep(ms: number) {
 function getVeoModelUrl(action: "predictLongRunning" | "fetchPredictOperation") {
   const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID;
   const region = process.env.VEO_REGION ?? "us-central1";
-  const model = process.env.VEO_MODEL ?? "veo-3.1-generate-001";
+  const model = process.env.VEO_MODEL ?? "veo-3.1-lite-generate-001";
 
   if (!projectId) {
     throw new Error("GOOGLE_CLOUD_PROJECT_ID belum ditetapkan.");
@@ -52,7 +52,7 @@ function toFriendlyVideoError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
 
   if (isHighLoadError(error)) {
-    return "Server cloud untuk video sedang busy. Cuba lagi sebentar lagi.";
+    return "Server cloud untuk sambung video sedang busy. Cuba lagi sebentar lagi.";
   }
 
   if (message.includes("401") || message.includes("UNAUTHENTICATED")) {
@@ -64,59 +64,13 @@ function toFriendlyVideoError(error: unknown) {
     message.toLowerCase().includes("responsible ai") ||
     message.toLowerCase().includes("safety")
   ) {
-    return "Prompt video kena block safety. Cuba guna scene dewasa dan elak muka kanak-kanak.";
+    return "Sambung video kena block safety. Cuba reference dewasa tanpa muka kanak-kanak.";
   }
 
-  return "Video gagal dijana. Cuba lagi.";
+  return "Sambung video gagal dijana. Cuba lagi.";
 }
 
-
-function dataUrlToImage(dataUrl: string) {
-  const match = dataUrl.match(/^data:(image\/(?:png|jpeg|jpg));base64,(.+)$/);
-
-  if (!match) {
-    return null;
-  }
-
-  return {
-    bytesBase64Encoded: match[2],
-    mimeType: match[1] === "image/jpg" ? "image/jpeg" : match[1]
-  };
-}
-
-async function referenceUrlToImage(referenceUrl: string) {
-  const dataUrlImage = dataUrlToImage(referenceUrl);
-
-  if (dataUrlImage) {
-    return dataUrlImage;
-  }
-
-  if (!referenceUrl.startsWith("http://") && !referenceUrl.startsWith("https://")) {
-    throw new Error("Reference image mesti data URL, http, atau https.");
-  }
-
-  const response = await fetch(referenceUrl);
-
-  if (!response.ok) {
-    throw new Error(`Reference image gagal dibaca. Status ${response.status}.`);
-  }
-
-  const mimeType = response.headers.get("content-type")?.split(";")[0];
-
-  if (mimeType !== "image/png" && mimeType !== "image/jpeg") {
-    throw new Error("Reference image bukan PNG atau JPEG.");
-  }
-
-  const arrayBuffer = await response.arrayBuffer();
-
-  return {
-    bytesBase64Encoded: Buffer.from(arrayBuffer).toString("base64"),
-    mimeType
-  };
-}
-
-async function startVeoOperation(referenceSceneUrl: string, prompt: string) {
-  const image = await referenceUrlToImage(referenceSceneUrl);
+async function startExtendOperation(baseVideoGcsUri: string, prompt: string) {
   const response = await fetch(getVeoModelUrl("predictLongRunning"), {
     method: "POST",
     headers: {
@@ -127,12 +81,14 @@ async function startVeoOperation(referenceSceneUrl: string, prompt: string) {
       instances: [
         {
           prompt,
-          image
+          video: {
+            gcsUri: baseVideoGcsUri,
+            mimeType: "video/mp4"
+          }
         }
       ],
       parameters: {
         aspectRatio: "9:16",
-        durationSeconds: 8,
         sampleCount: 1
       }
     })
@@ -140,7 +96,9 @@ async function startVeoOperation(referenceSceneUrl: string, prompt: string) {
 
   if (!response.ok) {
     throw new Error(
-      `Veo gagal mula. Status ${response.status}.${await readGoogleError(response)}`
+      `Veo sambung gagal mula. Status ${response.status}.${await readGoogleError(
+        response
+      )}`
     );
   }
 
@@ -148,7 +106,7 @@ async function startVeoOperation(referenceSceneUrl: string, prompt: string) {
   const operationName = data?.name || data?.operationName;
 
   if (!operationName) {
-    throw new Error("Veo tidak pulangkan operation name.");
+    throw new Error("Veo sambung tidak pulangkan operation name.");
   }
 
   return operationName;
@@ -158,7 +116,7 @@ async function pollVeoOperation(operationName: string) {
   const maxPolls = Number(process.env.VEO_MAX_POLLS ?? 60);
 
   for (let poll = 1; poll <= maxPolls; poll += 1) {
-    await new Promise((resolve) => setTimeout(resolve, 10000));
+    await sleep(10000);
 
     const response = await fetch(getVeoModelUrl("fetchPredictOperation"), {
       method: "POST",
@@ -173,7 +131,9 @@ async function pollVeoOperation(operationName: string) {
 
     if (!response.ok) {
       throw new Error(
-        `Veo status gagal. Status ${response.status}.${await readGoogleError(response)}`
+        `Veo sambung status gagal. Status ${
+          response.status
+        }.${await readGoogleError(response)}`
       );
     }
 
@@ -184,7 +144,9 @@ async function pollVeoOperation(operationName: string) {
     }
 
     if (data.error) {
-      throw new Error(`Veo gagal: ${JSON.stringify(data.error).slice(0, 900)}`);
+      throw new Error(
+        `Veo sambung gagal: ${JSON.stringify(data.error).slice(0, 900)}`
+      );
     }
 
     const video =
@@ -199,37 +161,24 @@ async function pollVeoOperation(operationName: string) {
 
     if (!output) {
       throw new Error(
-        `Veo siap tetapi video output tidak dikenali: ${JSON.stringify(data).slice(
-          0,
-          900
-        )}`
+        `Veo sambung siap tetapi output tidak dikenali: ${JSON.stringify(
+          data
+        ).slice(0, 900)}`
       );
     }
 
     return output as string;
   }
 
-  throw new Error("Veo belum siap selepas had polling local.");
+  throw new Error("Veo sambung belum siap selepas had polling local.");
 }
 
-function getVideoObjectName(kind: "base" | "extended") {
+function getVideoObjectName() {
   const id =
     globalThis.crypto?.randomUUID?.() ||
     `${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-  return `videos/${id}/${kind}.mp4`;
-}
-
-async function maybeUploadVideoToGcs(buffer: Buffer, kind: "base" | "extended") {
-  if (!getConfiguredBucketName()) {
-    return undefined;
-  }
-
-  return uploadGcsObject({
-    objectName: getVideoObjectName(kind),
-    contentType: "video/mp4",
-    body: buffer
-  });
+  return `videos/${id}/extended.mp4`;
 }
 
 async function saveVideoBuffer(buffer: Buffer) {
@@ -241,23 +190,7 @@ async function saveVideoBuffer(buffer: Buffer) {
   return `/api/generated-videos/${stored.id}`;
 }
 
-async function saveVideoOutput(output: string) {
-  if (output.startsWith("http://") || output.startsWith("https://")) {
-    const response = await fetch(output);
-
-    if (!response.ok) {
-      throw new Error(`Download video Veo gagal. Status ${response.status}.`);
-    }
-
-    const buffer = Buffer.from(await response.arrayBuffer());
-    const gcsUri = await maybeUploadVideoToGcs(buffer, "base");
-
-    return {
-      videoUrl: await saveVideoBuffer(buffer),
-      gcsUri
-    };
-  }
-
+async function saveExtendedOutput(output: string) {
   if (output.startsWith("gs://")) {
     const buffer = await downloadGcsObject(output);
 
@@ -268,7 +201,15 @@ async function saveVideoOutput(output: string) {
   }
 
   const buffer = Buffer.from(output, "base64");
-  const gcsUri = await maybeUploadVideoToGcs(buffer, "base");
+  let gcsUri: string | undefined;
+
+  if (getConfiguredBucketName()) {
+    gcsUri = await uploadGcsObject({
+      objectName: getVideoObjectName(),
+      contentType: "video/mp4",
+      body: buffer
+    });
+  }
 
   return {
     videoUrl: await saveVideoBuffer(buffer),
@@ -278,24 +219,24 @@ async function saveVideoOutput(output: string) {
 
 export async function POST(request: Request) {
   try {
-    const payload = (await request.json()) as ManualVideoPayload;
+    const payload = (await request.json()) as ExtendVideoPayload;
+    const baseVideoGcsUri =
+      typeof payload.baseVideoGcsUri === "string"
+        ? payload.baseVideoGcsUri.trim()
+        : "";
     const prompt =
       typeof payload.prompt === "string" ? payload.prompt.trim() : "";
-    const referenceSceneUrl =
-      typeof payload.referenceSceneUrl === "string"
-        ? payload.referenceSceneUrl.trim()
-        : "";
 
-    if (!referenceSceneUrl) {
+    if (!baseVideoGcsUri.startsWith("gs://")) {
       return NextResponse.json(
-        { error: "Reference image diperlukan untuk manual video." },
+        { error: "Base video GCS URI diperlukan untuk sambung video." },
         { status: 400 }
       );
     }
 
     if (!prompt || prompt.length < 20) {
       return NextResponse.json(
-        { error: "Prompt video terlalu pendek." },
+        { error: "Prompt sambung video terlalu pendek." },
         { status: 400 }
       );
     }
@@ -308,7 +249,7 @@ export async function POST(request: Request) {
       attempt += 1;
 
       try {
-        operationName = await startVeoOperation(referenceSceneUrl, prompt);
+        operationName = await startExtendOperation(baseVideoGcsUri, prompt);
         output = await pollVeoOperation(operationName);
         break;
       } catch (error) {
@@ -320,17 +261,17 @@ export async function POST(request: Request) {
       }
     }
 
-    const savedVideo = await saveVideoOutput(output);
+    const savedVideo = await saveExtendedOutput(output);
 
     return NextResponse.json({
       videoUrl: savedVideo.videoUrl,
-      baseVideoGcsUri: savedVideo.gcsUri,
+      extendedVideoGcsUri: savedVideo.gcsUri,
       operationName,
       attempts: attempt
     });
   } catch (error) {
     console.error(
-      "[manual-video]",
+      "[extend-video]",
       error instanceof Error ? error.message : String(error)
     );
 

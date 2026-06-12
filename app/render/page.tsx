@@ -38,11 +38,11 @@ export default function RenderPage() {
             Render final
           </p>
           <h1 className="text-3xl font-black leading-tight text-white sm:text-4xl">
-            Jana satu video 8 saat.
+            Jana satu video 16 saat.
           </h1>
           <p className="max-w-2xl text-sm leading-6 text-slate-300 sm:text-base">
-            Sistem guna image yang dipilih sebagai reference frame. Character
-            akan bercakap dialog pendek ikut keadaan scene.
+            Sistem guna image yang dipilih sebagai reference frame, jana base
+            video, kemudian sambung video supaya final lebih panjang.
           </p>
         </div>
 

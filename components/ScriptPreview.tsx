@@ -60,6 +60,18 @@ function parseStoredScript(script: string) {
   }
 }
 
+function buildExtendPromptPreview(script: GeneratedScript) {
+  return [
+    "Continue this exact vertical 9:16 product video from the final frame.",
+    "The output should feel like one complete 16-second TikTok Shop product video, continuing the same scene without a hard reset.",
+    "Keep the same adult character, same product, same room/location, same lighting, same camera style, and same visual identity.",
+    script.scene2_video_prompt || script.scene2_description,
+    `The main adult character speaks/says this Malay line with visible lip movement and mouth movement: "${script.scene2_video_script}".`,
+    "Show the product benefit clearly with natural hand movement, product interaction, facial expression, and slight camera push-in.",
+    "No subtitles, no on-screen text, no logo, no watermark."
+  ].join(" ");
+}
+
 export function ScriptPreview() {
   const [state, setState] = useState<ScriptState>({
     status: "idle",
@@ -220,16 +232,28 @@ export function ScriptPreview() {
             {script.scene1_subtitle}
           </p>
           <p className="mt-3 text-xs font-bold uppercase tracking-[0.14em] text-primary">
-            Video Script Scene 1
+            Dialog base video
           </p>
           <p className="mt-2 rounded-2xl border border-border bg-black/20 p-3 text-sm font-semibold leading-6 text-slate-200">
             {script.scene1_video_script}
           </p>
           <p className="mt-3 text-xs font-bold uppercase tracking-[0.14em] text-primary">
-            Video Prompt Scene 1
+            Prompt base 8s
           </p>
           <p className="mt-2 rounded-2xl border border-border bg-black/20 p-3 text-sm leading-6 text-slate-300">
             {script.scene1_video_prompt}
+          </p>
+          <p className="mt-3 text-xs font-bold uppercase tracking-[0.14em] text-primary">
+            Dialog sambung video
+          </p>
+          <p className="mt-2 rounded-2xl border border-border bg-black/20 p-3 text-sm font-semibold leading-6 text-slate-200">
+            {script.scene2_video_script}
+          </p>
+          <p className="mt-3 text-xs font-bold uppercase tracking-[0.14em] text-primary">
+            Prompt sambung ke 16s
+          </p>
+          <p className="mt-2 rounded-2xl border border-border bg-black/20 p-3 text-sm leading-6 text-slate-300">
+            {buildExtendPromptPreview(script)}
           </p>
         </section>
       </div>

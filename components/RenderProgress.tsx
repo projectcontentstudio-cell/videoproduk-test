@@ -36,7 +36,7 @@ function getStoredScript(): GeneratedScript {
       scene2_subtitle: "Ni solusi cepat",
       scene2_video_script: "Ha, guna ni terus nampak senang.",
       scene2_video_prompt:
-        'Create one 8-second vertical 9:16 image-to-video clip from this solution image. The main adult character says in Malay with visible lip movement: "Ha, guna ni terus nampak senang." Show natural small motion, product demo action if relevant, and relieved expression. No subtitles, no on-screen text, no logo.',
+        'Continue this exact vertical 9:16 product video from the final frame into the solution/product demo moment. The main adult character says in Malay with visible lip movement: "Ha, guna ni terus nampak senang." Show natural product interaction, relieved expression, and clear product benefit. No subtitles, no on-screen text, no logo.',
       cta: "Klik beg kuning sekarang!",
       caption: "Produk ni sesuai untuk content TikTok Shop. Check beg kuning sekarang.",
       hashtags: ["#TikTokShopMY", "#RacunTikTok", "#BarangBest", "#VideoProduk", "#Malaysia"]
@@ -60,6 +60,26 @@ function shouldUseProductAction(script: GeneratedScript) {
   return Boolean(
     script.visual_method && script.visual_method !== "problem_solution"
   );
+}
+
+function extractBasePrompt(prompt: string) {
+  const extendMarker = "EXTEND / CONTINUATION PROMPT FOR FINAL 16s:";
+  const baseMarker = "BASE 8s PROMPT:";
+  const withoutExtend = prompt.includes(extendMarker)
+    ? prompt.slice(0, prompt.indexOf(extendMarker))
+    : prompt;
+
+  return withoutExtend.replace(baseMarker, "").trim();
+}
+
+function extractExtendPrompt(prompt: string) {
+  const extendMarker = "EXTEND / CONTINUATION PROMPT FOR FINAL 16s:";
+
+  if (!prompt.includes(extendMarker)) {
+    return "";
+  }
+
+  return prompt.slice(prompt.indexOf(extendMarker) + extendMarker.length).trim();
 }
 
 function normalizeSceneForVideo(
@@ -124,6 +144,32 @@ export function RenderProgress() {
       `The main adult character must speak this Malay line naturally with visible lip movement and matching expression: "${dialogueLine}".`,
       "Use adult characters only. Do not show children, babies, toddlers, minors, or child faces.",
       "Make the mouth visibly move while speaking. Do not make the clip silent.",
+      "No subtitles, no on-screen text, no logo, no watermark."
+    ].join(" ");
+  }
+
+  function buildExtendVideoPrompt(scene: SelectedScene, script: GeneratedScript) {
+    const solutionDialogue =
+      script.scene2_video_script ||
+      script.scene2_subtitle ||
+      script.cta ||
+      "Ha, ini baru senang, cepat terus boleh guna.";
+    const selectedMethod = script.visual_method || "problem_solution";
+
+    return [
+      "Continue this exact vertical 9:16 product video from the final frame.",
+      "The output should feel like one complete 16-second TikTok Shop product video, continuing the same scene without a hard reset.",
+      "Keep the same adult character, same product, same room/location, same lighting, same camera style, and same visual identity.",
+      `Selected visual method: ${selectedMethod}.`,
+      scene.sceneDescription || script.scene1_description,
+      extractExtendPrompt(scene.manualVideoPrompt || "") ||
+        script.scene2_video_prompt ||
+        script.scene2_description,
+      "For the continuation, move from the first clip situation into the product benefit, demo, or showcase moment.",
+      "Show the adult character naturally touching, holding, opening, wearing, using, or pointing to the product when relevant.",
+      `The main adult character must speak this Malay line naturally with visible lip movement and matching expression: "${solutionDialogue}".`,
+      "Make the mouth visibly move while speaking. Do not make the clip silent.",
+      "Use adult characters only. Do not show children, babies, toddlers, minors, or child faces.",
       "No subtitles, no on-screen text, no logo, no watermark."
     ].join(" ");
   }
@@ -203,7 +249,7 @@ export function RenderProgress() {
     }
 
     const confirmed = window.confirm(
-      "Render video 8 saat akan guna 1 kredit. Teruskan?"
+      "Render video 16 saat akan jana base 8s dan sambung video. Teruskan?"
     );
 
     if (!confirmed) {
@@ -213,7 +259,7 @@ export function RenderProgress() {
     const script = getStoredScript();
     const normalizedScene = normalizeSceneForVideo(scene, script);
     const videoPrompt = enforceEightSecondSpeechPrompt(
-      normalizedScene.manualVideoPrompt ||
+      extractBasePrompt(normalizedScene.manualVideoPrompt || "") ||
         buildFallbackVideoPrompt(normalizedScene, script),
       normalizedScene,
       script
@@ -244,9 +290,54 @@ export function RenderProgress() {
         throw new Error(data.error || "Render gagal dimulakan.");
       }
 
-      const videoUrl = String(data.videoUrl || "");
+      setState((current) =>
+        current.status === "processing"
+          ? {
+              ...current,
+              progress: Math.max(current.progress, 58)
+            }
+          : current
+      );
+
+      let videoUrl = String(data.videoUrl || "");
+      let extendedVideoGcsUri: string | undefined;
+      const baseVideoGcsUri =
+        typeof data.baseVideoGcsUri === "string"
+          ? data.baseVideoGcsUri
+          : undefined;
+
+      if (!baseVideoGcsUri) {
+        throw new Error(
+          "Video 16 saat perlukan GCS_BUCKET_NAME supaya base video boleh disambung."
+        );
+      }
+
+      const extendResponse = await fetch("/api/extend-video", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          baseVideoGcsUri,
+          prompt: buildExtendVideoPrompt(normalizedScene, script)
+        })
+      });
+      const extendData = await extendResponse.json();
+
+      if (!extendResponse.ok) {
+        throw new Error(extendData.error || "Sambung video gagal.");
+      }
+
+      videoUrl = String(extendData.videoUrl || "");
+      extendedVideoGcsUri =
+        typeof extendData.extendedVideoGcsUri === "string"
+          ? extendData.extendedVideoGcsUri
+          : undefined;
+
       const result: RenderJobResult = {
         videoUrl,
+        baseVideoGcsUri,
+        extendedVideoGcsUri,
         watermarked: true,
         downloadable: false
       };
@@ -315,7 +406,7 @@ export function RenderProgress() {
           <div className="fixed left-1/2 top-1/2 w-[min(16rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-primary/40 bg-slate-950 px-4 py-3 shadow-glow">
             <p className="text-sm font-black text-white">Sila tunggu</p>
             <p className="mt-2 text-xs leading-5 text-slate-300">
-              Sedang jana video 8 saat.
+              Sedang jana video 16 saat.
             </p>
           </div>
         </div>
@@ -325,8 +416,8 @@ export function RenderProgress() {
         <p className="mt-2 text-sm leading-6 text-slate-300">
           {selectedScene
             ? selectedScene.sceneKind === "problem"
-              ? "Problem image akan digunakan sebagai reference frame untuk 1 clip Veo 8 saat dengan prompt Gemini."
-              : "Solution image akan digunakan sebagai reference frame untuk 1 clip Veo 8 saat dengan prompt Gemini."
+              ? "Problem image akan digunakan sebagai reference frame untuk video Veo 16 saat dengan prompt Gemini."
+              : "Solution image akan digunakan sebagai reference frame untuk video Veo 16 saat dengan prompt Gemini."
             : "Belum ada preview image. Kembali ke preview dan jana visual dulu."}
         </p>
       </div>
@@ -334,8 +425,8 @@ export function RenderProgress() {
       <div className="rounded-2xl border border-border bg-surface p-5">
         <p className="text-sm font-black text-white">Final render</p>
         <p className="mt-2 text-sm leading-6 text-slate-300">
-          Preview render guna direct Veo endpoint supaya token dibaca fresh dari
-          server. Output free tier masih preview dan bukan download final.
+          Sistem akan jana base 8 saat, kemudian sambung video supaya final
+          jadi sekitar 16 saat. Output free tier masih preview.
         </p>
         <div className="mt-5">
           <ProgressBar value={state.progress} />
