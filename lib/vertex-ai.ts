@@ -273,11 +273,11 @@ function inferProblemStrategy(input: GenerateImagesInput): ProblemStrategy {
       problemObjectMode: "exclude_category_object",
       oldBadObjectDescription: "",
       painScene:
-        "A rushed Malaysian mother in a pastel pink hijab is late for work while her small child waits at the breakfast table looking sad and hungry because breakfast is not ready.",
+        "A rushed adult Malaysian mother in a pastel pink hijab is late for work while an empty breakfast setup on the table shows breakfast is not ready.",
       safeProps:
-        "The child's white bowl is completely empty and clean inside, with an unused spoon, a plain cup of milk, one whole banana, one apple, a crumpled napkin, a plain unmarked handbag, and a plain unmarked child's school bag. The table is sparse and unfinished, not ingredient-heavy.",
+        "A white bowl is completely empty and clean inside, with an unused spoon, a plain cup of milk, one whole banana, one apple, a crumpled napkin, a plain unmarked handbag, and a plain unmarked school bag placed as context only. The table is sparse and unfinished, not ingredient-heavy. No child, baby, toddler, minor, or child face.",
       mustShow:
-        "must show the mother wearing a pastel pink hijab, must show a small child, must show a clean empty white bowl with nothing inside, must show only whole banana and apple as unprepared fruit",
+        "must show the adult mother wearing a pastel pink hijab, must show a clean empty white bowl with nothing inside, must show only whole banana and apple as unprepared fruit, must not show children or babies",
       exclusions: [
         ...genericExclusions,
         ...productWords,
@@ -371,11 +371,11 @@ function inferProblemStrategy(input: GenerateImagesInput): ProblemStrategy {
       problemObjectMode: "exclude_category_object",
       oldBadObjectDescription: "",
       painScene:
-        "A Malaysian woman in a pastel pink hijab sits in a warm small apartment room looking uncomfortable and sweaty while a child struggles to rest in the heat.",
+        "An adult Malaysian woman in a pastel pink hijab sits in a warm small apartment room looking uncomfortable and sweaty while trying to continue her daily routine in the heat.",
       safeProps:
         "Show bright afternoon heat through the window, still curtains, a handkerchief, water glass, and light clothing. Make the room feel stuffy and warm without showing any cooling device.",
       mustShow:
-        "must show the woman wearing a pastel pink hijab, must show warm uncomfortable room mood, must show sweat or heat discomfort without any cooling appliance",
+        "must show the adult woman wearing a pastel pink hijab, must show warm uncomfortable room mood, must show sweat or heat discomfort without any cooling appliance, must not show children or babies",
       exclusions: [
         ...genericExclusions,
         ...productWords,
@@ -861,17 +861,17 @@ function buildStoryboardPrompts(
   const problemPrompt = isBreakfastFood
     ? `Full-bleed vertical 9:16 polished cute 3D cartoon TikTok Shop Malaysia image, premium commercial 3D animation. Problem scene only, before the solution appears. No product, no packaging, no brand, no solution item, no breakfast ingredient clue.
 
-Scene: bright Malaysian apartment kitchen during a busy rushed morning. A young Malaysian mother in her early 30s wears a modest casual home outfit with a soft pastel pink hijab. She looks worried and late while comforting her small child. The child sits at the breakfast table looking sad and hungry because breakfast is not ready.
+Scene: bright Malaysian apartment kitchen during a busy rushed morning. A young adult Malaysian mother in her early 30s wears a modest casual home outfit with a soft pastel pink hijab. She looks worried and late while looking at an unfinished breakfast setup on the table. No child, baby, toddler, minor, or child face appears anywhere.
 
 Show the struggle visually only: a large white breakfast bowl is tilted toward the camera so the blank white empty interior is clearly visible, nothing inside the bowl, no spoon inside the bowl. Put an unused spoon beside the bowl, a plain cup of milk, one whole banana, one whole apple, a crumpled napkin, a plain unmarked handbag, and a plain unmarked school bag. The table is sparse and unfinished, not full of ingredients. Do not show oats, cereal, porridge, flakes, grains, granola, powder, baby food, food pouches, packets, boxes, tins, jars, branded containers, or any food inside the bowl.
 
-Composition: mother and child both visible, emotional worried glance, full kitchen fills the vertical frame, natural blank cabinet or wall area near the top for future TikTok caption. Every prop must be plain and unmarked with no readable text or fake letters. ${stylePrompt}. No text, no readable marks, no logo, no watermark, no real people.`
+Composition: adult mother visible with emotional worried glance, full kitchen fills the vertical frame, natural blank cabinet or wall area near the top for future TikTok caption. Every prop must be plain and unmarked with no readable text or fake letters. ${stylePrompt}. No text, no readable marks, no logo, no watermark, no real people, no children, no babies.`
     : isCooling
       ? `Full-bleed vertical 9:16 polished cute 3D cartoon TikTok Shop Malaysia problem image, premium commercial 3D animation. Problem scene only, before the solution appears. No fan, no kipas, no air cooler, no air conditioner, no AC unit, no cooling machine, no portable device, no product.
 
-Scene: a hot Malaysian afternoon in a small home living area or balcony corner with strong sunlight, still curtains, and warm orange light. A Malaysian woman in a soft pastel pink hijab looks uncomfortable and sweaty while a child looks tired from the heat. Show heat discomfort through sweat, flushed faces, still air, water glasses, and sunlight. Do not show any cooling appliance or machine anywhere.
+Scene: a hot Malaysian afternoon in a small home living area or balcony corner with strong sunlight, still curtains, and warm orange light. An adult Malaysian woman in a soft pastel pink hijab looks uncomfortable and sweaty while trying to continue her daily routine in the heat. Show heat discomfort through sweat, flushed face, still air, water glass, and sunlight. Do not show any cooling appliance or machine anywhere. No child, baby, toddler, minor, or child face appears anywhere.
 
-Composition: mother and child visible, no devices in foreground, no aircond on wall, no cooler on floor, no fan, no vents, no product. Keep top area clean for future caption. Every prop must be plain and unmarked with no text or fake letters. ${stylePrompt}.`
+Composition: adult woman visible, no devices in foreground, no aircond on wall, no cooler on floor, no fan, no vents, no product. Keep top area clean for future caption. Every prop must be plain and unmarked with no text or fake letters. ${stylePrompt}. No children, no babies.`
       : isBag
         ? `Full-bleed vertical 9:16 polished cute 3D cartoon TikTok Shop Malaysia problem image, premium commercial 3D animation. Problem scene only, before the solution appears. Do not show the uploaded/new product bag, do not show a stylish new bag, do not show matching color/shape/material from the uploaded product.
 
@@ -1094,7 +1094,7 @@ function buildSingleSceneImagePrompt(input: GenerateImagesInput) {
     `The product is ${input.productName}. The uploaded product reference must appear clearly in the same scene. Preserve the product packaging, shape, main color blocking, pack/form factor, silhouette, label layout, and overall visual identity from the reference image as clearly as possible.`,
     "Follow the selected visual method, not a fixed problem-solution formula. If the method is problem_solution or before_after, show the customer pain with the product visible nearby. If the method is showcase, make the product the attractive hero in a lifestyle/fashion/product-focus scene. If the method is demo or lifestyle_use, show the product ready to be used naturally in context.",
     "For showcase specifically: create one single coherent lifestyle scene only. Do not create a catalog layout, split-screen, collage, product-only top section, multiple color variants, floating cutout, ecommerce poster, or product grid. Show one main product naturally worn, held, placed, or displayed in the scene with an adult character or lifestyle setting.",
-    "Avoid baby/child close-up faces; if family context is needed, show only adult caregiver focus or a child from behind/hands only.",
+    "Veo safety: do not show babies, children, toddlers, minors, child faces, or child bodies. If family/baby product context is needed, show adult caregiver focus with neutral props only.",
     "Composition: polished full-bleed vertical scene, empty clean space at the top for TikTok caption, product clear in the frame, adult character or lifestyle context as appropriate for the selected method, Malaysian home/kitchen/work/lifestyle setting as appropriate.",
     "Strict negatives: no extra ad text, no TikTok Shop words, no speech bubble, no captions, no price overlay, no watermark, no poster typography, no ad headline, no split layout, no collage, no multiple product variants, no floating product cutout. Product packaging details from the uploaded reference are allowed."
   ].join(" ");
@@ -1213,7 +1213,7 @@ Rules for video_prompt:
 - The main adult character must speak one short natural Malay line with visible lip movement.
 - Use the exact Malay dialogue line from the script. Do not replace it with a generic line.
 - Use natural small motion only.
-- Avoid child/minor close-up faces for Veo safety; prefer adult-only or child from behind/hands only if needed.
+- Veo safety: avoid children, babies, toddlers, minors, child faces, and child bodies. Prefer adult-only scenes; for baby/kids products show only adult caregiver and neutral props.
 - No subtitles, no on-screen text, no logo, no watermark.
 
 Return JSON only:
@@ -1518,7 +1518,7 @@ Core method:
 - If an old/bad generic object is useful, allow only an old plain generic version that is clearly not the uploaded product.
 - For food, supplement, baby food, cereal, oat, drink powder, blender/juicer, fan/cooler, skincare, appliance, and any obvious solution object: exclude the product and exclude direct category clues in the problem image.
 - Prefer an adult Malaysian working woman in a soft pastel pink hijab as the recurring character.
-- For video safety, avoid children, babies, toddlers, minors, and child faces unless absolutely required. Prefer adult-only problem scenes.
+- For video safety, never include children, babies, toddlers, minors, child faces, or child bodies. Prefer adult-only problem scenes with neutral props.
 - Avoid text, logos, labels, numbers, readable writing, brand marks, watermarks, fake letters, and packaging.
 - Make it polished cute 3D cartoon, TikTok Shop Malaysia, full-bleed vertical 9:16, top caption space.
 

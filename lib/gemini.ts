@@ -43,6 +43,7 @@ Pilihan method:
 - lifestyle_use: untuk produk harian yang lebih sesuai tunjuk situasi guna natural.
 Scene utama mesti ikut visual_method. Produk sebenar mesti ada dalam frame dan jelas.
 Video akan bermula dari image itu dan character akan berinteraksi dengan produk ikut method yang dipilih.
+Veo safety rule: jangan masukkan baby, kanak-kanak, toddler, minor, atau muka child dalam image/video prompt. Untuk produk baby/kids, guna adult caregiver sahaja, prop seperti bowl/beg/mainan boleh ada, tapi tiada child face/body sebagai watak utama.
 Format output JSON sahaja - tiada teks lain.
 
 JSON format:

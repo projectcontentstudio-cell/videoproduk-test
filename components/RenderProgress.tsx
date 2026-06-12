@@ -88,6 +88,7 @@ export function RenderProgress() {
       basePrompt.replace(/\b6-second\b/gi, "8-second").replace(/\b6 seconds\b/gi, "8 seconds"),
       "Duration must be exactly 8 seconds.",
       `The main adult character must speak this Malay line naturally with visible lip movement and matching expression: "${dialogueLine}".`,
+      "Use adult characters only. Do not show children, babies, toddlers, minors, or child faces.",
       "Make the mouth visibly move while speaking. Do not make the clip silent.",
       "No subtitles, no on-screen text, no logo, no watermark."
     ].join(" ");
@@ -105,6 +106,7 @@ export function RenderProgress() {
       "Create one 8-second vertical 9:16 image-to-video clip using the supplied image as the first frame.",
       sceneDescription,
       `The main adult character must speak this Malay line naturally with visible lip movement and matching expression: "${dialogueLine}".`,
+      "Use adult characters only. Do not show children, babies, toddlers, minors, or child faces.",
       "The speaking should fit the situation in the scene. Use natural small motion: facial expression, mouth movement, gentle hand gesture, slight camera push-in.",
       "Do not make the clip silent. No subtitles, no on-screen text, no logo, no watermark."
     ].join(" ");

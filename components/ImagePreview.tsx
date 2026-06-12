@@ -302,26 +302,32 @@ export function ImagePreview() {
     const stored = localStorage.getItem("videoproduk_script");
     const script = stored ? (JSON.parse(stored) as GeneratedScript) : null;
     const currentImages = state.images || getStoredImages();
+    const useProductAction =
+      script?.visual_method && script.visual_method !== "problem_solution";
+    const effectiveSceneKind = useProductAction ? "solution" : sceneKind;
 
     localStorage.setItem(
       "videoproduk_selected_scene",
       JSON.stringify({
         imageUrl,
-        sceneKind,
+        sceneKind: effectiveSceneKind,
         sceneDescription:
-          sceneKind === "problem"
+          effectiveSceneKind === "problem"
             ? currentImages?.problemPromptUsed ||
               script?.scene1_description ||
               "Problem scene produk."
-            : currentImages?.solutionPromptUsed ||
+            : currentImages?.problemPromptUsed ||
+              currentImages?.solutionPromptUsed ||
               script?.scene2_description ||
               "Solution scene produk.",
         manualVideoPrompt:
-          sceneKind === "problem"
+          effectiveSceneKind === "problem"
             ? currentImages?.problemVideoPrompt || script?.scene1_video_prompt
-            : currentImages?.solutionVideoPrompt || script?.scene2_video_prompt,
+            : script?.scene2_video_prompt ||
+              currentImages?.solutionVideoPrompt ||
+              currentImages?.problemVideoPrompt,
         dialogueLine:
-          sceneKind === "problem"
+          effectiveSceneKind === "problem"
             ? script?.scene1_video_script ||
               script?.scene1_subtitle ||
               "Aduh, macam mana nak settle ni?"
