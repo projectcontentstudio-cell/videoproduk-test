@@ -53,6 +53,10 @@ async function storeImageUrl(dataUrl: string, request: Request) {
     return dataUrl;
   }
 
+  if (process.env.VERCEL) {
+    return dataUrl;
+  }
+
   const stored = await storeGeneratedImage(dataUrl);
   const requestUrl = new URL(request.url);
   const forwardedProto = request.headers.get("x-forwarded-proto");
