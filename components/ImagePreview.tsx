@@ -42,7 +42,7 @@ function ensureShopWatermarkPreference() {
   }
 
   const wantsWatermark = window.confirm(
-    "Nak letak nama kedai kecil di atas tengah image/video sebagai watermark halus?"
+    "Nak letak nama kedai kecil di bahagian atas tengah image/video sebagai watermark halus?"
   );
 
   if (!wantsWatermark) {

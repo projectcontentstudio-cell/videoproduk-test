@@ -89,8 +89,8 @@ function getShopWatermarkRule(input: Pick<GenerateImagesInput, "shopWatermark">)
   }
 
   return {
-    image: `Add only one subtle shop-name watermark text: "${watermark}" at the top center. It must be small, semi-transparent, low contrast, and not distract from the product. Do not add any other text, fake writing, logo, caption, price, or typography.`,
-    video: `Preserve the existing subtle shop-name watermark "${watermark}" at the top center if it appears in the first frame. Do not create any other subtitles, text, logos, captions, or typography.`
+    image: `Add only one subtle shop-name watermark text: "${watermark}" in the upper-center area, around 12-15% down from the top edge with safe margin. It must be small, semi-transparent, low contrast, and not distract from the product. Do not place it touching the top border. Do not add any other text, fake writing, logo, caption, price, or typography.`,
+    video: `Preserve the existing subtle shop-name watermark "${watermark}" in the upper-center area if it appears in the first frame. Keep it away from the top border. Do not create any other subtitles, text, logos, captions, or typography.`
   };
 }
 

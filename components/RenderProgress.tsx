@@ -42,7 +42,7 @@ function getShopWatermarkInstruction() {
     return "No subtitles, no on-screen text, no logo, no watermark.";
   }
 
-  return `Preserve the subtle shop-name watermark "${shopName}" at the top center if it appears in the first frame. Do not add any other subtitles, on-screen text, logo, caption, or typography.`;
+  return `Preserve the subtle shop-name watermark "${shopName}" in the upper-center area if it appears in the first frame. Keep it away from the top border. Do not add any other subtitles, on-screen text, logo, caption, or typography.`;
 }
 
 function getStoredScript(): GeneratedScript {
