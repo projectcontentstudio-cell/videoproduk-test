@@ -50,6 +50,16 @@ function getStoredImagePayload() {
   };
 }
 
+function parseStoredScript(script: string) {
+  try {
+    return JSON.parse(script) as GeneratedScript;
+  } catch {
+    localStorage.removeItem("videoproduk_script");
+    localStorage.removeItem("videoproduk_script_cache_key");
+    return null;
+  }
+}
+
 export function ScriptPreview() {
   const [state, setState] = useState<ScriptState>({
     status: "idle",
@@ -110,10 +120,15 @@ export function ScriptPreview() {
     const storedCacheKey = localStorage.getItem("videoproduk_script_cache_key");
     const currentCacheKey = getScriptCacheKey(productName, style);
 
-    if (storedScript && storedCacheKey === currentCacheKey) {
+    const parsedScript =
+      storedScript && storedCacheKey === currentCacheKey
+        ? parseStoredScript(storedScript)
+        : null;
+
+    if (parsedScript) {
       setState({
         status: "success",
-        script: JSON.parse(storedScript) as GeneratedScript,
+        script: parsedScript,
         error: ""
       });
       return;
