@@ -288,6 +288,11 @@ export async function POST(request: Request) {
       attempts: attempt
     });
   } catch (error) {
+    console.error(
+      "[manual-video]",
+      error instanceof Error ? error.message : String(error)
+    );
+
     return NextResponse.json(
       {
         error: toFriendlyVideoError(error)
