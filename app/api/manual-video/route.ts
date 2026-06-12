@@ -243,8 +243,12 @@ async function saveVideoOutput(output: string) {
 export async function POST(request: Request) {
   try {
     const payload = (await request.json()) as ManualVideoPayload;
-    const prompt = payload.prompt?.trim();
-    const referenceSceneUrl = payload.referenceSceneUrl?.trim();
+    const prompt =
+      typeof payload.prompt === "string" ? payload.prompt.trim() : "";
+    const referenceSceneUrl =
+      typeof payload.referenceSceneUrl === "string"
+        ? payload.referenceSceneUrl.trim()
+        : "";
 
     if (!referenceSceneUrl) {
       return NextResponse.json(
