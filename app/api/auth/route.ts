@@ -16,7 +16,7 @@ export async function POST(request: Request) {
     password?: string;
   } | null;
 
-  if (payload?.password !== expectedPassword) {
+  if (payload?.password?.trim() !== expectedPassword.trim()) {
     return NextResponse.json({ error: "Password salah." }, { status: 401 });
   }
 
