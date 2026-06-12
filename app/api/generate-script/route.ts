@@ -1,0 +1,58 @@
+import { NextResponse } from "next/server";
+import { generateScriptWithGemini } from "@/lib/gemini";
+import type { GenerateScriptInput } from "@/lib/gemini";
+import { getFriendlyErrorMessage } from "@/lib/friendly-error";
+
+export const runtime = "nodejs";
+
+function parseBody(body: Partial<GenerateScriptInput>): GenerateScriptInput {
+  if (!body.productName?.trim()) {
+    throw new Error("Nama produk wajib diisi.");
+  }
+
+  if (!body.productImageBase64) {
+    throw new Error("Gambar produk diperlukan.");
+  }
+
+  if (body.productImageBase64.length < 1000) {
+    throw new Error("Gambar produk tidak valid. Upload semula gambar produk.");
+  }
+
+  if (
+    body.productImageMimeType !== "image/jpeg" &&
+    body.productImageMimeType !== "image/png"
+  ) {
+    throw new Error("Gambar mesti dalam format JPG atau PNG.");
+  }
+
+  return {
+    productName: body.productName.trim(),
+    productPrice: body.productPrice?.trim() || "RM0",
+    style: body.style === "3d-character" ? "3d-character" : "3d-character",
+    productImageBase64: body.productImageBase64,
+    productImageMimeType: body.productImageMimeType
+  };
+}
+
+export async function POST(request: Request) {
+  try {
+    const input = parseBody(await request.json());
+    const script = await generateScriptWithGemini(input);
+
+    return NextResponse.json({
+      script,
+      creditBurned: false,
+      message: "Skrip berjaya dijana. Kredit belum digunakan."
+    });
+  } catch (error) {
+    return NextResponse.json(
+      {
+        error: getFriendlyErrorMessage(
+          error,
+          "Skrip gagal dijana. Cuba sekali lagi."
+        )
+      },
+      { status: 400 }
+    );
+  }
+}

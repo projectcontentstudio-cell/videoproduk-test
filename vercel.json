@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "app/api/generate-script/route.ts": {
+      "maxDuration": 30
+    },
+    "app/api/generate-images/route.ts": {
+      "maxDuration": 60
+    },
+    "app/api/manual-video/route.ts": {
+      "maxDuration": 300
+    }
+  }
+}
