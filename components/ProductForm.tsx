@@ -7,14 +7,14 @@ const visualStyles = [
   {
     id: "3d-character",
     label: "3D Cartoon",
-    detail: "Style aktif untuk image dan script scene sekarang.",
+    detail: "Watak 3D cartoon untuk video produk.",
     enabled: true
   },
   {
     id: "realistic-ugc",
     label: "Realistic UGC",
-    detail: "Disable dulu.",
-    enabled: false
+    detail: "Gaya realistic seller/UGC. Flow tetap sama.",
+    enabled: true
   },
   {
     id: "bold-comic",
@@ -50,7 +50,7 @@ export function ProductForm() {
   useEffect(() => {
     const storedStyle = localStorage.getItem("videoproduk_image_style");
 
-    if (storedStyle === "3d-character") {
+    if (storedStyle === "3d-character" || storedStyle === "realistic-ugc") {
       setSelectedStyle(storedStyle);
     } else {
       localStorage.setItem("videoproduk_image_style", "3d-character");
@@ -88,7 +88,8 @@ export function ProductForm() {
     const previousName = localStorage.getItem("videoproduk_product_name");
     const previousStyle = localStorage.getItem("videoproduk_image_style");
     const nextName = productName.trim();
-    const nextStyle = "3d-character";
+    const nextStyle =
+      selectedStyle === "realistic-ugc" ? "realistic-ugc" : "3d-character";
 
     if (previousName !== nextName || previousStyle !== nextStyle) {
       clearGeneratedFlow();

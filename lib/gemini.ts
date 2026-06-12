@@ -34,6 +34,10 @@ Jangan formal. Jangan Indonesia. Bahasa Malaysia pasar yang sebenar.
 Analisa gambar produk yang dihantar dan nama produk.
 Hasilkan skrip yang spesifik untuk produk ini - bukan generic.
 Flow sekarang hanya guna satu image. Jangan reka dua storyboard berasingan.
+Style visual dipilih oleh user:
+- 3D Cartoon: scene dan video prompt mesti guna polished 3D cartoon/ad style.
+- Realistic UGC: scene dan video prompt mesti guna realistic Malaysian UGC/social commerce style, natural phone-camera look, adult human creator/seller, bukan 3D, bukan cartoon.
+Flow, rules, dialog, CTA dan struktur output kekal sama untuk semua style.
 Gemini mesti pilih visual_method yang paling sesuai untuk produk, jangan paksa semua produk jadi problem-solution.
 Pilihan method:
 - problem_solution: untuk produk yang jelas selesaikan pain point, contoh kipas, cleaner, storage, alat dapur.
@@ -259,7 +263,7 @@ export async function generateScriptWithGemini(input: GenerateScriptInput) {
           parts: [
             {
               text: `Nama produk: ${input.productName}\nStyle visual: ${
-                input.style === "3d-character" ? "3D Cartoon" : "3D Cartoon"
+                input.style === "realistic-ugc" ? "Realistic UGC" : "3D Cartoon"
               }\nHasilkan JSON skrip TikTok Shop Malaysia berdasarkan gambar produk ini. Scene dan video prompt mesti sesuai dengan style visual tersebut. Jangan masukkan harga dalam skrip, caption, image prompt, atau video prompt.`
             },
             {

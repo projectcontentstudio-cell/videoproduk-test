@@ -1249,6 +1249,7 @@ Shop watermark rule:
 Rules for image_prompt:
 - One vertical 9:16 image.
 - Cute polished 3D cartoon TikTok Shop Malaysia style if style is 3d-character.
+- Realistic Malaysian UGC/social-commerce phone-camera style if style is realistic-ugc. For realistic-ugc, do not use 3D, cartoon, CGI, clay, toy, Pixar-like, anime, or illustrated style.
 - Follow the shop watermark rule exactly.
 - Keep it product-ad friendly and family-safe.
 - Follow the Gemini-selected visual method from the script. Do not force problem-solution if the method is showcase, demo, or lifestyle_use.

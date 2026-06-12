@@ -28,7 +28,8 @@ function parseBody(body: Partial<GenerateScriptInput>): GenerateScriptInput {
   return {
     productName: body.productName.trim(),
     productPrice: body.productPrice?.trim() || "RM0",
-    style: body.style === "3d-character" ? "3d-character" : "3d-character",
+    style:
+      body.style === "realistic-ugc" ? "realistic-ugc" : "3d-character",
     productImageBase64: body.productImageBase64,
     productImageMimeType: body.productImageMimeType
   };
