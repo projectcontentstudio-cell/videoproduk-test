@@ -23,6 +23,7 @@ export type GenerateScriptInput = {
   style?: string;
   productImageBase64: string;
   productImageMimeType: "image/jpeg" | "image/png";
+  productAnalysis?: string;
 };
 
 const geminiModel = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
@@ -32,6 +33,7 @@ Tugas kamu: hasilkan skrip video UGC dalam Bahasa Melayu informal
 (guna: korang, aku, ni, tu, memang, kan).
 Jangan formal. Jangan Indonesia. Bahasa Malaysia pasar yang sebenar.
 Analisa gambar produk yang dihantar dan nama produk.
+Jika ada "Fakta produk daripada semakan upload", jadikan fakta itu sebagai constraint keras. Jangan tambah ciri yang bercanggah. Contoh: jika fakta kata portable/rechargeable/no visible cable, jangan tambah kabel, plug, wall power, atau versi wired dalam scene, image prompt, atau video prompt.
 Hasilkan skrip yang spesifik untuk produk ini - bukan generic.
 Flow sekarang hanya guna satu image. Jangan reka dua storyboard berasingan.
 Style visual dipilih oleh user:
@@ -47,9 +49,10 @@ Pilihan method:
 - lifestyle_use: untuk produk harian yang lebih sesuai tunjuk situasi guna natural.
 Scene utama mesti ikut visual_method. Produk sebenar mesti ada dalam frame dan jelas.
 Video final sekarang sekitar 16 saat: sistem jana base 8 saat dari image, kemudian sambung video dengan Veo extend. Scene1 video prompt ialah arahan base 8 saat. Scene2 video prompt mesti ditulis sebagai continuation prompt dari final frame scene1, bukan image baru.
+Scene2 tidak boleh ulang scene1. Scene1 = setup/intro/pain/notice product. Scene2 = sambungan aksi produk/benefit/result/close-up. Jika scene2 sama maksud dengan scene1, output dianggap gagal.
 Video akan bermula dari image itu dan character akan berinteraksi dengan produk ikut method yang dipilih.
 Veo safety rule: jangan masukkan baby, kanak-kanak, toddler, minor, atau muka child dalam image/video prompt. Untuk produk baby/kids, guna adult caregiver sahaja, prop seperti bowl/beg/mainan boleh ada, tapi tiada child face/body sebagai watak utama.
-Dialog wajib: Gemini mesti cipta satu line dialog Bahasa Melayu untuk video. Jangan buat video silent. Setiap scene*_video_prompt mesti mengandungi exact dialogue line, perkataan speak/says, visible lip movement, mouth movement, dan arahan action yang sesuai dengan visual_method.
+Dialog wajib: Gemini mesti cipta dialog Bahasa Melayu yang natural dan cukup untuk video 8 saat setiap clip. Jangan buat video silent. Dialog base dan dialog sambungan mesti berbeza. Setiap scene*_video_prompt mesti mengandungi exact dialogue line, perkataan speak/says, visible lip movement, mouth movement, dan arahan action yang sesuai dengan visual_method.
 Video prompt wajib lengkap seperti prompt production, bukan ayat pendek. Wajib nyatakan: watak utama, lokasi, emosi, aksi tangan/badan, produk jelas dalam frame, apa character buat terhadap produk, timing/motion 8 saat untuk scene1, dan no subtitles/no text/no logo. Contoh style: "A 3D cartoon female character is sitting at a desk in a brightly lit room, fanning herself vigorously with her hand, sweating visibly..., a dark blue portable mini fan matching the product image is clearly visible on the desk..., she looks at the fan with hope. The character speaks/says, \"...\" Visible lip movement, mouth movement, natural motion for 8 seconds. No subtitles, no text, no logo."
 Format output JSON sahaja - tiada teks lain.
 
@@ -60,11 +63,11 @@ JSON format:
   hook: string (max 10 words, grab attention, ada masalah relatable),
   scene1_description: string (describe the single image scene for image AI based on visual_method; product must be visible and clear in frame),
   scene1_subtitle: string (max 8 words shown on screen),
-  scene1_video_script: string (natural Malay spoken dialogue for base video, minimum 25 characters, max 18 words, based on visual_method),
+  scene1_video_script: string (natural Malay spoken dialogue for base video, minimum 35 characters, max 28 words, based on visual_method),
   scene1_video_prompt: string (long English Veo image-to-video production prompt for the single image, must include character, location, emotion, product clearly visible, product-specific action, the Malay spoken dialogue, visible lip movement, mouth movement, natural motion for 8 seconds, no subtitles/text/logo),
-  scene2_description: string (describe solution scene with product),
+  scene2_description: string (describe continuation/product-result scene; must not repeat scene1_description),
   scene2_subtitle: string (max 8 words shown on screen),
-  scene2_video_script: string (natural Malay spoken dialogue for continuation video, minimum 25 characters, max 18 words, based on the solution/product),
+  scene2_video_script: string (natural Malay spoken dialogue for continuation video, minimum 35 characters, max 28 words, different from scene1_video_script, based on the product result/benefit),
   scene2_video_prompt: string (long English Veo extend-video continuation prompt from the final frame of base video, must continue same character/product/location/style, include product-specific demo/benefit action, say exactly what changes in the continuation, include the Malay spoken dialogue, visible lip movement, mouth movement, natural motion, no subtitles/text/logo),
   cta: string (max 8 words, urgency),
   caption: string (2-3 sentences natural BM for TikTok post),
@@ -111,6 +114,25 @@ function hasSpeechInstruction(prompt: string, dialogueLine: string) {
     /\b(speak|speaks|says|say|dialogue|spoken)\b/i.test(prompt) &&
     /lip movement|mouth movement|mouth visibly move/i.test(prompt)
   );
+}
+
+function normalizeForCompare(value?: string) {
+  return (value || "")
+    .toLowerCase()
+    .replace(/[^\w\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isTooSimilar(first?: string, second?: string) {
+  const a = normalizeForCompare(first);
+  const b = normalizeForCompare(second);
+
+  if (!a || !b) {
+    return false;
+  }
+
+  return a === b || a.includes(b) || b.includes(a);
 }
 
 async function readVertexError(response: Response) {
@@ -164,6 +186,15 @@ export function validateGeneratedScript(script: Partial<GeneratedScript>) {
     script.scene2_video_prompt = `${script.scene2_video_prompt} The main adult character must clearly speak this exact Malay dialogue line with visible lip movement and mouth movement: "${script.scene2_video_script}". Do not make the video silent.`;
   }
 
+  if (isTooSimilar(script.scene1_description, script.scene2_description)) {
+    script.scene2_description = `Continuation from the first scene: the same adult character now actively uses, holds, wears, demonstrates, or points to the product clearly, then shows the benefit/result with a more confident expression.`;
+  }
+
+  if (isTooSimilar(script.scene1_video_script, script.scene2_video_script)) {
+    script.scene2_video_script =
+      "Lepas cuba produk ni, barulah rasa perubahan dia jelas dan mudah untuk guna hari-hari.";
+  }
+
   const requiredFields: Array<keyof GeneratedScript> = [
     "hook",
     "scene1_description",
@@ -201,20 +232,20 @@ export function validateGeneratedScript(script: Partial<GeneratedScript>) {
     throw new Error("Subtitle sambungan mesti maksimum 8 perkataan.");
   }
 
-  if ((script.scene1_video_script as string).trim().length < 25) {
-    throw new Error("Dialog base video mesti minimum 25 aksara.");
+  if ((script.scene1_video_script as string).trim().length < 35) {
+    throw new Error("Dialog base video mesti minimum 35 aksara.");
   }
 
-  if ((script.scene2_video_script as string).trim().length < 25) {
-    throw new Error("Dialog sambungan video mesti minimum 25 aksara.");
+  if ((script.scene2_video_script as string).trim().length < 35) {
+    throw new Error("Dialog sambungan video mesti minimum 35 aksara.");
   }
 
-  if (countWords(script.scene1_video_script as string) > 18) {
-    throw new Error("Dialog base video mesti maksimum 18 perkataan.");
+  if (countWords(script.scene1_video_script as string) > 28) {
+    throw new Error("Dialog base video mesti maksimum 28 perkataan.");
   }
 
-  if (countWords(script.scene2_video_script as string) > 18) {
-    throw new Error("Dialog sambungan video mesti maksimum 18 perkataan.");
+  if (countWords(script.scene2_video_script as string) > 28) {
+    throw new Error("Dialog sambungan video mesti maksimum 28 perkataan.");
   }
 
   if (countWords(script.cta as string) > 8) {
@@ -264,7 +295,9 @@ export async function generateScriptWithGemini(input: GenerateScriptInput) {
             {
               text: `Nama produk: ${input.productName}\nStyle visual: ${
                 input.style === "realistic-ugc" ? "Realistic UGC" : "3D Cartoon"
-              }\nHasilkan JSON skrip TikTok Shop Malaysia berdasarkan gambar produk ini. Scene dan video prompt mesti sesuai dengan style visual tersebut. Jangan masukkan harga dalam skrip, caption, image prompt, atau video prompt.`
+              }\nFakta produk daripada semakan upload:\n${
+                input.productAnalysis?.trim() || "Tiada semakan tambahan."
+              }\n\nHasilkan JSON skrip TikTok Shop Malaysia berdasarkan gambar produk ini. Scene dan video prompt mesti sesuai dengan style visual tersebut. Jangan masukkan harga dalam skrip, caption, image prompt, atau video prompt. Jangan bercanggah dengan fakta produk daripada semakan upload.`
             },
             {
               inlineData: {

@@ -57,7 +57,11 @@ function parseBody(body: Partial<GenerateImagesInput>): GenerateImagesInput {
     script: body.script,
     quality: body.quality === "final" ? "final" : "preview",
     style: body.style || "3d-character",
-    shopWatermark: sanitizeShopWatermark(body.shopWatermark)
+    shopWatermark: sanitizeShopWatermark(body.shopWatermark),
+    productAnalysis:
+      typeof body.productAnalysis === "string"
+        ? body.productAnalysis.trim().slice(0, 2500)
+        : ""
   };
 }
 

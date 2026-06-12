@@ -31,7 +31,11 @@ function parseBody(body: Partial<GenerateScriptInput>): GenerateScriptInput {
     style:
       body.style === "realistic-ugc" ? "realistic-ugc" : "3d-character",
     productImageBase64: body.productImageBase64,
-    productImageMimeType: body.productImageMimeType
+    productImageMimeType: body.productImageMimeType,
+    productAnalysis:
+      typeof body.productAnalysis === "string"
+        ? body.productAnalysis.trim().slice(0, 2500)
+        : ""
   };
 }
 

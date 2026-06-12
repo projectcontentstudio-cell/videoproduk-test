@@ -19,6 +19,7 @@ type SelectedScene = {
   sceneDescription?: string;
   dialogueLine?: string;
   manualVideoPrompt?: string;
+  productAnalysis?: string;
 };
 
 type RenderState =
@@ -49,6 +50,23 @@ function getShopWatermarkInstruction() {
   }
 
   return `Preserve the subtle shop-name watermark "${shopName}" in the upper-center area if it appears in the first frame. Keep it away from the top border. Do not add any other subtitles, on-screen text, logo, caption, or typography.`;
+}
+
+function getProductAnalysisInstruction(scene?: SelectedScene | null) {
+  const facts =
+    scene?.productAnalysis ||
+    localStorage.getItem("videoproduk_product_analysis") ||
+    "";
+
+  if (!facts.trim()) {
+    return "Use the uploaded product/reference image as source of truth. Do not invent unsupported product features.";
+  }
+
+  return [
+    "Hard product facts from upload analysis:",
+    facts.trim(),
+    "Do not contradict these facts. If the facts say portable, rechargeable, battery powered, no visible cable, or compact travel design, do not add cable, power cord, wall plug, wired version, wrong color, wrong shape, or unrelated accessories. Do not switch to a random hero object such as tissue, cloth, bottle, box, food, tool, bag, watch, or cosmetic unless it is the uploaded product. The character must interact with the uploaded product only."
+  ].join(" ");
 }
 
 function getStoredScript(): GeneratedScript {
@@ -172,6 +190,7 @@ export function RenderProgress() {
     return [
       basePrompt.replace(/\b6-second\b/gi, "8-second").replace(/\b6 seconds\b/gi, "8 seconds"),
       "Duration must be exactly 8 seconds.",
+      getProductAnalysisInstruction(scene),
       `The main adult character must speak this Malay line naturally with visible lip movement and matching expression: "${dialogueLine}".`,
       "Use adult characters only. Do not show children, babies, toddlers, minors, or child faces.",
       "Make the mouth visibly move while speaking. Do not make the clip silent.",
@@ -192,12 +211,14 @@ export function RenderProgress() {
       "The output should feel like one complete 16-second TikTok Shop product video, continuing the same scene without a hard reset.",
       "Keep the same adult character, same product, same room/location, same lighting, same camera style, and same visual identity.",
       `Selected visual method: ${selectedMethod}.`,
+      getProductAnalysisInstruction(scene),
       scene.sceneDescription || script.scene1_description,
       extractExtendPrompt(scene.manualVideoPrompt || "") ||
         script.scene2_video_prompt ||
         script.scene2_description,
       "For the continuation, move from the first clip situation into the product benefit, demo, or showcase moment.",
       "Show the adult character naturally touching, holding, opening, wearing, using, or pointing to the product when relevant.",
+      "Do not switch the hero action to an unrelated object. Use the uploaded product only.",
       `The main adult character must speak this Malay line naturally with visible lip movement and matching expression: "${solutionDialogue}".`,
       "Make the mouth visibly move while speaking. Do not make the clip silent.",
       "Use adult characters only. Do not show children, babies, toddlers, minors, or child faces.",
@@ -215,6 +236,7 @@ export function RenderProgress() {
 
     return [
       "Create one 8-second vertical 9:16 image-to-video clip using the supplied image as the first frame.",
+      getProductAnalysisInstruction(scene),
       sceneDescription,
       `The main adult character must speak this Malay line naturally with visible lip movement and matching expression: "${dialogueLine}".`,
       "Use adult characters only. Do not show children, babies, toddlers, minors, or child faces.",

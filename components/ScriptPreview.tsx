@@ -17,12 +17,15 @@ function clearPreviewFlow() {
 
 function getScriptCacheKey(productName: string, style: string) {
   const image = localStorage.getItem("videoproduk_product_image") || "";
+  const productAnalysis =
+    localStorage.getItem("videoproduk_product_analysis") || "";
   return JSON.stringify({
     productName,
     style,
     imageLength: image.length,
     imageHead: image.slice(0, 80),
-    imageTail: image.slice(-80)
+    imageTail: image.slice(-80),
+    productAnalysisHead: productAnalysis.slice(0, 120)
   });
 }
 
@@ -99,6 +102,8 @@ export function ScriptPreview() {
           productName,
           productPrice,
           style,
+          productAnalysis:
+            localStorage.getItem("videoproduk_product_analysis") || "",
           ...imagePayload
         })
       });

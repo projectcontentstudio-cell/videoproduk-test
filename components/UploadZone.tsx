@@ -2,12 +2,15 @@
 
 import { useCallback, useRef, useState } from "react";
 import { QualityGate, type QualityCheck } from "./QualityGate";
+import type { ProductAnalysis } from "@/lib/product-analysis";
 
 type AnalysisResult = {
   checks: QualityCheck[];
   previewUrl: string;
   dataUrl: string;
   passed: boolean;
+  productAnalysis?: ProductAnalysis;
+  productAnalysisError?: string;
 };
 
 const blurThreshold = 90;
@@ -20,6 +23,7 @@ function clearGeneratedFlow() {
   localStorage.removeItem("videoproduk_script_cache_key");
   localStorage.removeItem("videoproduk_shop_watermark_enabled");
   localStorage.removeItem("videoproduk_shop_watermark_name");
+  localStorage.removeItem("videoproduk_product_analysis");
 }
 
 function getImageFromFile(file: File) {
@@ -263,6 +267,37 @@ async function analyzeFile(file: File): Promise<AnalysisResult> {
   };
 }
 
+function getStoredImagePayload(dataUrl: string) {
+  const [header, data] = dataUrl.split(",");
+  const mimeType = header?.includes("image/jpeg") ? "image/jpeg" : "image/png";
+
+  if (!header?.startsWith("data:image/") || !data || data.length < 1000) {
+    throw new Error("Gambar produk tidak lengkap. Sila upload semula.");
+  }
+
+  return {
+    productImageBase64: data,
+    productImageMimeType: mimeType
+  };
+}
+
+async function analyzeProduct(dataUrl: string) {
+  const response = await fetch("/api/analyze-product", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(getStoredImagePayload(dataUrl))
+  });
+  const data = await response.json();
+
+  if (!response.ok) {
+    throw new Error(data.error || "Semakan produk tidak lengkap.");
+  }
+
+  return data.analysis as ProductAnalysis;
+}
+
 export function UploadZone() {
   const inputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
@@ -287,6 +322,24 @@ export function UploadZone() {
       clearGeneratedFlow();
       localStorage.removeItem("videoproduk_script");
       localStorage.setItem("videoproduk_product_image", analysis.dataUrl);
+
+      try {
+        const productAnalysis = await analyzeProduct(analysis.dataUrl);
+        localStorage.setItem(
+          "videoproduk_product_analysis",
+          JSON.stringify(productAnalysis)
+        );
+        setResult({ ...analysis, productAnalysis });
+      } catch (productError) {
+        localStorage.removeItem("videoproduk_product_analysis");
+        setResult({
+          ...analysis,
+          productAnalysisError:
+            productError instanceof Error
+              ? productError.message
+              : "Semakan produk tidak lengkap."
+        });
+      }
     } catch (analysisError) {
       setError(
         analysisError instanceof Error
@@ -307,7 +360,7 @@ export function UploadZone() {
           <div className="fixed left-1/2 top-1/2 w-[min(16rem,calc(100vw-2rem))] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-primary/40 bg-slate-950 px-4 py-3 shadow-glow">
             <p className="text-sm font-black text-white">Sila tunggu</p>
             <p className="mt-2 text-xs leading-5 text-slate-300">
-              Sedang semak gambar.
+              Sedang semak gambar dan produk.
             </p>
           </div>
         </div>
@@ -423,6 +476,60 @@ export function UploadZone() {
                   <li key={check.label}>{check.detail}</li>
                 ))}
               </ul>
+            </div>
+          ) : null}
+
+          {result?.productAnalysis ? (
+            <div className="rounded-2xl border border-primary/40 bg-primary/10 p-4">
+              <p className="text-sm font-black text-white">
+                Fakta produk dikesan
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-200">
+                {result.productAnalysis.summary ||
+                  `${result.productAnalysis.productType} dikesan daripada gambar.`}
+              </p>
+              <div className="mt-3 grid gap-2 text-xs leading-5 text-slate-300">
+                <p>
+                  <span className="font-bold text-white">Jenis:</span>{" "}
+                  {result.productAnalysis.productType}
+                </p>
+                {result.productAnalysis.colors.length ? (
+                  <p>
+                    <span className="font-bold text-white">Warna:</span>{" "}
+                    {result.productAnalysis.colors.join(", ")}
+                  </p>
+                ) : null}
+                {result.productAnalysis.keyFeatures.length ? (
+                  <p>
+                    <span className="font-bold text-white">Ciri:</span>{" "}
+                    {result.productAnalysis.keyFeatures.slice(0, 4).join(", ")}
+                  </p>
+                ) : null}
+                {result.productAnalysis.usageFacts.length ? (
+                  <p>
+                    <span className="font-bold text-white">Fakta guna:</span>{" "}
+                    {result.productAnalysis.usageFacts.slice(0, 4).join(", ")}
+                  </p>
+                ) : null}
+                {result.productAnalysis.avoidMistakes.length ? (
+                  <p>
+                    <span className="font-bold text-white">Elak salah:</span>{" "}
+                    {result.productAnalysis.avoidMistakes.slice(0, 4).join(", ")}
+                  </p>
+                ) : null}
+              </div>
+              <p className="mt-3 text-xs font-semibold text-primary">
+                {result.productAnalysis.searchMatched
+                  ? "Detail dipadankan dengan carian."
+                  : "Berdasarkan gambar sahaja."}
+              </p>
+            </div>
+          ) : null}
+
+          {result?.productAnalysisError ? (
+            <div className="rounded-2xl border border-amber-400/40 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100">
+              Semakan detail produk tidak lengkap, tapi gambar diterima. Sistem
+              masih akan guna gambar upload sebagai rujukan utama.
             </div>
           ) : null}
 

@@ -19,6 +19,7 @@ export type GenerateImagesInput = {
   quality?: "preview" | "final";
   style?: string;
   shopWatermark?: string;
+  productAnalysis?: string;
 };
 
 export type GeneratedImages = {
@@ -92,6 +93,20 @@ function getShopWatermarkRule(input: Pick<GenerateImagesInput, "shopWatermark">)
     image: `Add only one subtle shop-name watermark text: "${watermark}" in the upper-center area, around 12-15% down from the top edge with safe margin. It must be small, semi-transparent, low contrast, and not distract from the product. Do not place it touching the top border. Do not add any other text, fake writing, logo, caption, price, or typography.`,
     video: `Preserve the existing subtle shop-name watermark "${watermark}" in the upper-center area if it appears in the first frame. Keep it away from the top border. Do not create any other subtitles, text, logos, captions, or typography.`
   };
+}
+
+function getProductAnalysisRule(input: Pick<GenerateImagesInput, "productAnalysis">) {
+  const facts = input.productAnalysis?.trim();
+
+  if (!facts) {
+    return "Use the uploaded product reference as the source of truth. Do not invent product features that are not visible.";
+  }
+
+  return [
+    "Hard product facts from upload analysis:",
+    facts,
+    "Do not contradict these facts. If the facts say portable, rechargeable, battery powered, no visible cable, or compact travel design, do not add cable, power cord, wall plug, wired version, wrong color, wrong shape, or unrelated accessories. Do not introduce a different hero product or random prop such as tissue, bottle, box, food, tool, bag, watch, or cosmetic unless it is the uploaded product or clearly relevant background prop. Preserve the product type, visible colors, shape, usage facts, and avoid-mistakes list."
+  ].join("\n");
 }
 
 function getVertexPredictUrl() {
@@ -1106,6 +1121,7 @@ function parseAutoPromptPlan(text: string) {
 function buildSingleSceneImagePrompt(input: GenerateImagesInput) {
   const method = input.script.visual_method || "problem_solution";
   const watermarkRule = getShopWatermarkRule(input);
+  const productFacts = getProductAnalysisRule(input);
 
   return [
     `Create one vertical 9:16 ${getStylePrompt(input.style)} image for a TikTok Shop Malaysia seller video.`,
@@ -1113,6 +1129,7 @@ function buildSingleSceneImagePrompt(input: GenerateImagesInput) {
       input.script.visual_method_reason || "Use the method that best fits the product."
     }`,
     `Use this exact base scene: ${input.script.scene1_description}`,
+    productFacts,
     `The product is ${input.productName}. The uploaded product reference must appear clearly in the same scene. Preserve the exact main color, color blocking, shape, pack/form factor, silhouette, label layout, and overall visual identity from the reference image as clearly as possible. Do not recolor the product. If the reference product is dark blue, black, pink, white, or any other color, keep that same dominant color on the product.`,
     "Follow the selected visual method, not a fixed problem-solution formula. If the method is problem_solution or before_after, show the customer pain with the product visible nearby. If the method is showcase, make the product the attractive hero in a lifestyle/fashion/product-focus scene. If the method is demo or lifestyle_use, show the product ready to be used naturally in context.",
     "For showcase specifically: create one single coherent lifestyle scene only. Do not create a catalog layout, split-screen, collage, product-only top section, multiple color variants, floating cutout, ecommerce poster, or product grid. Show one main product naturally worn, held, placed, or displayed in the scene with an adult character or lifestyle setting.",
@@ -1126,10 +1143,12 @@ function buildSingleSceneImagePrompt(input: GenerateImagesInput) {
 function buildSingleSceneVideoPrompt(input: GenerateImagesInput) {
   const method = input.script.visual_method || "problem_solution";
   const watermarkRule = getShopWatermarkRule(input);
+  const productFacts = getProductAnalysisRule(input);
 
   return [
     "Create one 8-second vertical 9:16 image-to-video BASE clip using this image as the first frame.",
     `Product: ${input.productName}.`,
+    productFacts,
     `Selected visual method: ${method}.`,
     `Full scene setup: ${input.script.scene1_description}`,
     "Write the motion like a production prompt, not a generic scene. Clearly describe the adult character, the room/location, the emotion, the hand/body action, and where the product is visible in the frame.",
@@ -1144,15 +1163,18 @@ function buildSingleSceneVideoPrompt(input: GenerateImagesInput) {
 function buildExtendSceneVideoPrompt(input: GenerateImagesInput) {
   const method = input.script.visual_method || "problem_solution";
   const watermarkRule = getShopWatermarkRule(input);
+  const productFacts = getProductAnalysisRule(input);
 
   return [
     "EXTEND VIDEO PROMPT: Continue this exact vertical 9:16 product video from the final frame of the base clip.",
     "The extended output should feel like one complete 16-second TikTok Shop Malaysia video, not a new scene and not a hard reset.",
     `Product: ${input.productName}.`,
+    productFacts,
     `Selected visual method: ${method}.`,
     `Continuation scene: ${input.script.scene2_description || input.script.scene1_description}`,
     "Keep the same adult character, same outfit, same room/location, same lighting, same camera angle/style, and same product appearance.",
     "Now continue into the product benefit/action. The adult character should naturally pick up, hold, wear, open, use, press, spray, point to, organize with, or demonstrate the product according to what the product actually is.",
+    "Do not switch to another object as the hero product. The product interaction must use the uploaded product only, not a random tissue, cloth, bottle, box, tool, or unrelated prop.",
     "Make the product action clear and specific, with natural hand movement and facial expression changing from problem/interest into relief/confidence.",
     `The main adult character speaks/says this natural Malay line with visible lip movement and mouth movement: "${input.script.scene2_video_script || input.script.cta || "Ha, ini baru senang, cepat terus boleh guna."}"`,
     watermarkRule.video
@@ -1176,6 +1198,7 @@ function completeAutoPromptPlan(
       ? buildSingleSceneImagePrompt(input)
       : [
           plan.imagePrompt,
+          getProductAnalysisRule(input),
           `This is the only storyboard image for the video. Follow the Gemini-selected visual method (${input.script.visual_method || "problem_solution"}), not a fixed problem-solution formula. The uploaded product must be visible and recognizable. Preserve exact dominant product color, packaging, shape, label layout, silhouette, and color blocking as clearly as possible. Do not recolor the product. If method is showcase, it must be one coherent lifestyle scene, not a catalog, split-screen, collage, product-only cutout, or multiple variants. ${getShopWatermarkRule(input).image}`
         ].join(" ");
 
@@ -1185,6 +1208,7 @@ function completeAutoPromptPlan(
       ? buildSingleSceneVideoPrompt(input)
       : [
           plan.videoPrompt,
+          getProductAnalysisRule(input),
           `The clip must follow the Gemini-selected visual method (${input.script.visual_method || "problem_solution"}). This is only the base 8-second clip. It must be a complete production prompt with character, location, emotion, product visible in frame, product-specific action, and one Malay spoken line with visible lip movement. ${getShopWatermarkRule(input).video}`
         ].join(" ");
   const extendPrompt = buildExtendSceneVideoPrompt(input);
@@ -1240,6 +1264,8 @@ Malay dialogue line from script, use this exact line in video_prompt: ${input.sc
 Gemini-selected visual method from script: ${input.script.visual_method || "problem_solution"}
 Reason for method: ${input.script.visual_method_reason || "Method selected by script planner."}
 Selected style: ${input.style || "3d-character"}
+Hard product facts from upload analysis:
+${input.productAnalysis?.trim() || "No additional product facts available."}
 
 Use the uploaded product/reference image to understand the product. Use the app structure above, but write the final prompt naturally like Gemini browser would.
 Shop watermark rule:
@@ -1258,6 +1284,8 @@ Rules for image_prompt:
 - Showcase must be one natural scene only, not a catalog, not split-screen, not collage, not product-only top half, not multiple variants, not floating product cutout. Show one main product naturally worn, held, placed, or displayed.
 - For demo or lifestyle_use: show the product naturally ready to be used or being presented in context.
 - Preserve the product's visible shape/color/design from the uploaded reference, but do not copy readable labels/logos. Do not swap to another product category.
+- Do not contradict the hard product facts. If facts say portable, rechargeable, battery powered, no visible cable, compact, spray bottle, pouch, or any specific form, keep that exactly. Do not add cable, plug, wrong color, wrong shape, wrong size, or unrelated accessories.
+- Do not make a random object become the hero product. No tissue/cloth/bottle/box/tool/bag/watch/cosmetic unless that is the uploaded product or only a small background prop.
 
 Rules for video_prompt:
 - One 8-second vertical image-to-video prompt using this generated image as first frame.
@@ -1270,6 +1298,8 @@ Rules for video_prompt:
 - Use natural small motion only.
 - Veo safety: avoid children, babies, toddlers, minors, child faces, and child bodies. Prefer adult-only scenes; for baby/kids products show only adult caregiver and neutral props.
 - Follow the shop watermark rule exactly.
+- Do not contradict the hard product facts. Product action must match the actual product type and visible features.
+- Never switch the hero action to an unrelated object. The adult character must interact with the uploaded product only.
 
 Return JSON only:
 {
