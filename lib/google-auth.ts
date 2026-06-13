@@ -9,6 +9,7 @@ type ServiceAccount = {
 };
 
 let cachedToken: { token: string; expiresAt: number } | null = null;
+let serviceAccountParseError = "";
 
 function base64Url(input: string | Buffer) {
   return Buffer.from(input)
@@ -40,20 +41,34 @@ function readEnvAccessToken() {
 
 function parseServiceAccount() {
   const rawJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  serviceAccountParseError = "";
 
   if (rawJson?.trim()) {
-    const normalized = rawJson.trim();
-    const json = normalized.startsWith("{")
-      ? normalized
-      : Buffer.from(normalized, "base64").toString("utf8");
+    try {
+      const normalized = rawJson.trim();
 
-    const account = JSON.parse(json) as ServiceAccount;
+      if (normalized === "{test}") {
+        serviceAccountParseError =
+          "GOOGLE_SERVICE_ACCOUNT_JSON masih placeholder {test}.";
+        return null;
+      }
 
-    if (account.private_key) {
-      account.private_key = account.private_key.replace(/\\n/g, "\n");
+      const json = normalized.startsWith("{")
+        ? normalized
+        : Buffer.from(normalized, "base64").toString("utf8");
+
+      const account = JSON.parse(json) as ServiceAccount;
+
+      if (account.private_key) {
+        account.private_key = account.private_key.replace(/\\n/g, "\n");
+      }
+
+      return account;
+    } catch {
+      serviceAccountParseError =
+        "GOOGLE_SERVICE_ACCOUNT_JSON bukan JSON service account yang valid.";
+      return null;
     }
-
-    return account;
   }
 
   const credentialsPath =
@@ -156,6 +171,12 @@ export async function getGoogleAccessToken() {
 
   if (serviceAccount?.client_email && serviceAccount.private_key) {
     return requestServiceAccountToken(serviceAccount);
+  }
+
+  if (serviceAccountParseError) {
+    throw new Error(
+      `${serviceAccountParseError} Paste JSON penuh service account, atau set GOOGLE_AUTH_METHOD=access-token untuk guna token 1 jam.`
+    );
   }
 
   throw new Error(
