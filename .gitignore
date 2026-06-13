@@ -18,5 +18,7 @@ yarn-error.log*
 pnpm-debug.log*
 chrome-backtest-profile/
 chrome-backtest-profile-2/
+chrome-mobile-layout-profile/
+outputs/
 
 .vercel
