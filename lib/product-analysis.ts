@@ -117,6 +117,46 @@ export function stringifyProductAnalysis(analysis?: ProductAnalysis | null) {
 }
 
 export async function analyzeProductWithGemini(input: AnalyzeProductInput) {
+  async function parseResponse(response: Response) {
+    if (!response.ok) {
+      throw new Error(
+        `Analisis produk gagal. Status ${response.status}.${await readVertexError(
+          response
+        )}`
+      );
+    }
+
+    const data = await response.json();
+    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!text || typeof text !== "string" || !text.trim()) {
+      throw new Error("Analisis produk tidak pulangkan teks.");
+    }
+
+    return normalizeAnalysis(parseJsonText(text));
+  }
+
+  function fallbackAnalysis(): ProductAnalysis {
+    return {
+      productType: "Produk daripada gambar upload",
+      visibleName: "",
+      colors: [],
+      shape: "",
+      keyFeatures: [],
+      usageFacts: [],
+      mustPreserve: [
+        "Ikut rupa produk dalam gambar upload sebagai rujukan utama"
+      ],
+      avoidMistakes: [
+        "Jangan tambah ciri produk yang tidak jelas kelihatan"
+      ],
+      searchMatched: false,
+      confidence: "low",
+      summary:
+        "Semakan automatik tidak lengkap, jadi sistem akan guna gambar upload sebagai rujukan utama."
+    };
+  }
+
   async function requestAnalysis(useGoogleSearch: boolean) {
     return fetch(getVertexGenerateContentUrl(), {
       method: "POST",
@@ -176,26 +216,13 @@ Return JSON only:
     });
   }
 
-  let response = await requestAnalysis(true);
-
-  if (!response.ok) {
-    response = await requestAnalysis(false);
+  try {
+    return await parseResponse(await requestAnalysis(true));
+  } catch {
+    try {
+      return await parseResponse(await requestAnalysis(false));
+    } catch {
+      return fallbackAnalysis();
+    }
   }
-
-  if (!response.ok) {
-    throw new Error(
-      `Analisis produk gagal. Status ${response.status}.${await readVertexError(
-        response
-      )}`
-    );
-  }
-
-  const data = await response.json();
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-  if (!text || typeof text !== "string") {
-    throw new Error("Analisis produk tidak pulangkan teks.");
-  }
-
-  return normalizeAnalysis(parseJsonText(text));
 }
