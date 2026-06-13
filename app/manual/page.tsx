@@ -2,13 +2,13 @@ import { ManualLab } from "@/components/ManualLab";
 
 export default function ManualPage() {
   return (
-    <main className="min-h-screen px-5 py-7 sm:px-6 lg:px-8">
+    <main className="min-h-screen px-4 py-6 sm:px-6 sm:py-7 lg:px-8">
       <section className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-        <header className="flex flex-wrap items-center justify-between gap-3">
+        <header className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
           <a href="/" className="text-base font-bold text-white">
             VideoProduk.my
           </a>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex max-w-full flex-wrap gap-2 sm:gap-3">
             <a
               href="/upload"
               className="inline-flex min-h-11 items-center justify-center rounded-full border border-border px-5 text-sm font-black text-white"
@@ -28,7 +28,7 @@ export default function ManualPage() {
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">
             Manual test
           </p>
-          <h1 className="mt-3 text-3xl font-black text-white sm:text-4xl">
+          <h1 className="mt-3 text-2xl font-black text-white sm:text-4xl">
             Image + Video API Lab
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300 sm:text-base">

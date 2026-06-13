@@ -2,13 +2,13 @@ import { ProductForm } from "@/components/ProductForm";
 
 export default function DetailsPage() {
   return (
-    <main className="min-h-screen px-5 py-8">
+    <main className="min-h-screen px-4 py-6 sm:px-5 sm:py-8">
       <section className="mx-auto flex w-full max-w-xl flex-col gap-8">
-        <header className="flex items-center justify-between gap-4">
+        <header className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
           <a href="/" className="text-base font-bold text-white">
             VideoProduk.my
           </a>
-          <div className="flex items-center gap-2">
+          <div className="flex max-w-full flex-wrap items-center gap-2">
             <a
               href="/"
               className="rounded-full border border-border px-3 py-1 text-xs font-bold text-slate-300 transition hover:border-primary hover:text-white"
