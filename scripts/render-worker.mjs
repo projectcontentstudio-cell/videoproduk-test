@@ -69,11 +69,7 @@ function parseServiceAccount() {
       : Buffer.from(normalized, "base64").toString("utf8");
     const account = JSON.parse(json);
 
-    if (account.private_key) {
-      account.private_key = account.private_key.replace(/\\n/g, "\n");
-    }
-
-    return account;
+    return validateServiceAccount(account);
   }
 
   const credentialsPath =
@@ -84,14 +80,50 @@ function parseServiceAccount() {
       readFileSync(join(rootDir, credentialsPath), "utf8")
     );
 
-    if (account.private_key) {
-      account.private_key = account.private_key.replace(/\\n/g, "\n");
-    }
-
-    return account;
+    return validateServiceAccount(account);
   } catch {
     return null;
   }
+}
+
+function normalizePrivateKey(privateKey) {
+  let key = privateKey.trim();
+
+  if (
+    (key.startsWith('"') && key.endsWith('"')) ||
+    (key.startsWith("'") && key.endsWith("'"))
+  ) {
+    key = key.slice(1, -1);
+  }
+
+  key = key.replace(/\\r\\n/g, "\n").replace(/\\n/g, "\n");
+
+  if (!key.includes("-----BEGIN") && /^[A-Za-z0-9+/=\r\n]+$/.test(key)) {
+    const decoded = Buffer.from(key, "base64").toString("utf8").trim();
+
+    if (decoded.includes("-----BEGIN")) {
+      key = decoded;
+    }
+  }
+
+  return key;
+}
+
+function validateServiceAccount(account) {
+  if (!account?.client_email || !account?.private_key) {
+    return null;
+  }
+
+  account.private_key = normalizePrivateKey(account.private_key);
+
+  if (
+    !account.private_key.includes("-----BEGIN PRIVATE KEY-----") ||
+    !account.private_key.includes("-----END PRIVATE KEY-----")
+  ) {
+    return null;
+  }
+
+  return account;
 }
 
 async function requestServiceAccountToken(account) {
@@ -112,9 +144,17 @@ async function requestServiceAccountToken(account) {
   signer.update(unsignedJwt);
   signer.end();
 
-  const assertion = `${unsignedJwt}.${base64Url(
-    signer.sign(account.private_key)
-  )}`;
+  let signature;
+
+  try {
+    signature = base64Url(signer.sign(account.private_key));
+  } catch {
+    throw new Error(
+      "Service account private_key tidak boleh dibaca. Paste semula GOOGLE_SERVICE_ACCOUNT_JSON penuh dari Google Cloud."
+    );
+  }
+
+  const assertion = `${unsignedJwt}.${signature}`;
   const response = await fetch(
     account.token_uri || "https://oauth2.googleapis.com/token",
     {

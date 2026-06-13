@@ -39,6 +39,50 @@ function readEnvAccessToken() {
   return token;
 }
 
+function normalizePrivateKey(privateKey: string) {
+  let key = privateKey.trim();
+
+  if (
+    (key.startsWith('"') && key.endsWith('"')) ||
+    (key.startsWith("'") && key.endsWith("'"))
+  ) {
+    key = key.slice(1, -1);
+  }
+
+  key = key.replace(/\\r\\n/g, "\n").replace(/\\n/g, "\n");
+
+  if (!key.includes("-----BEGIN") && /^[A-Za-z0-9+/=\r\n]+$/.test(key)) {
+    const decoded = Buffer.from(key, "base64").toString("utf8").trim();
+
+    if (decoded.includes("-----BEGIN")) {
+      key = decoded;
+    }
+  }
+
+  return key;
+}
+
+function validateServiceAccount(account: ServiceAccount) {
+  if (!account.client_email || !account.private_key) {
+    serviceAccountParseError =
+      "GOOGLE_SERVICE_ACCOUNT_JSON mesti ada client_email dan private_key.";
+    return null;
+  }
+
+  account.private_key = normalizePrivateKey(account.private_key);
+
+  if (
+    !account.private_key.includes("-----BEGIN PRIVATE KEY-----") ||
+    !account.private_key.includes("-----END PRIVATE KEY-----")
+  ) {
+    serviceAccountParseError =
+      "private_key dalam GOOGLE_SERVICE_ACCOUNT_JSON tidak lengkap. Copy JSON key asal dari Google Cloud, jangan tukar format private_key.";
+    return null;
+  }
+
+  return account;
+}
+
 function parseServiceAccount() {
   const rawJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
   serviceAccountParseError = "";
@@ -59,11 +103,7 @@ function parseServiceAccount() {
 
       const account = JSON.parse(json) as ServiceAccount;
 
-      if (account.private_key) {
-        account.private_key = account.private_key.replace(/\\n/g, "\n");
-      }
-
-      return account;
+      return validateServiceAccount(account);
     } catch {
       serviceAccountParseError =
         "GOOGLE_SERVICE_ACCOUNT_JSON bukan JSON service account yang valid.";
@@ -79,11 +119,7 @@ function parseServiceAccount() {
       readFileSync(join(process.cwd(), credentialsPath), "utf8")
     ) as ServiceAccount;
 
-    if (account.private_key) {
-      account.private_key = account.private_key.replace(/\\n/g, "\n");
-    }
-
-    return account;
+    return validateServiceAccount(account);
   } catch {
     return null;
   }
@@ -107,7 +143,15 @@ async function requestServiceAccountToken(account: ServiceAccount) {
   signer.update(unsignedJwt);
   signer.end();
 
-  const signature = base64Url(signer.sign(account.private_key));
+  let signature: string;
+
+  try {
+    signature = base64Url(signer.sign(account.private_key));
+  } catch {
+    throw new Error(
+      "Service account private_key tidak boleh dibaca. Sila paste semula GOOGLE_SERVICE_ACCOUNT_JSON penuh dari file key Google Cloud, termasuk private_key dengan BEGIN PRIVATE KEY."
+    );
+  }
   const assertion = `${unsignedJwt}.${signature}`;
   const response = await fetch(
     account.token_uri || "https://oauth2.googleapis.com/token",
