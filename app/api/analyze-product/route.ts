@@ -33,6 +33,15 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ analysis });
   } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof error === "string"
+          ? error
+          : "Unknown error";
+
+    console.error("[analyze-product]", message.slice(0, 1000));
+
     return NextResponse.json(
       {
         error: getFriendlyErrorMessage(

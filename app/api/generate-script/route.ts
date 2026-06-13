@@ -54,6 +54,15 @@ export async function POST(request: Request) {
       message: "Skrip berjaya dijana. Kredit belum digunakan."
     });
   } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof error === "string"
+          ? error
+          : "Unknown error";
+
+    console.error("[generate-script]", message.slice(0, 1000));
+
     return NextResponse.json(
       {
         error: getFriendlyErrorMessage(
