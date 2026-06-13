@@ -1,6 +1,6 @@
-import { ManualLab } from "@/components/ManualLab";
+import { StoryLab } from "@/components/StoryLab";
 
-export default function ManualPage() {
+export default function StoryPage() {
   return (
     <main className="min-h-screen px-4 py-6 sm:px-6 sm:py-7 lg:px-8">
       <section className="mx-auto flex w-full max-w-7xl flex-col gap-6">
@@ -10,10 +10,10 @@ export default function ManualPage() {
           </a>
           <div className="flex max-w-full flex-wrap gap-2 sm:gap-3">
             <a
-              href="/story"
+              href="/manual"
               className="inline-flex min-h-11 items-center justify-center rounded-full border border-border px-5 text-sm font-black text-white"
             >
-              Story Lab
+              Manual Lab
             </a>
             <a
               href="/upload"
@@ -32,19 +32,20 @@ export default function ManualPage() {
 
         <div>
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary">
-            Manual test
+            Story lab
           </p>
           <h1 className="mt-3 text-2xl font-black text-white sm:text-4xl">
-            Image + Video API Lab
+            Susun cerita sebelum generate.
           </h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300 sm:text-base">
-            Upload reference, paste prompt, generate image. Prompt tidak
-            dipaksa realistic atau 3D. Lepas image ok, paste prompt video dan
-            generate video. Ini page test berasingan daripada storyboard utama.
+            Page ini untuk plan story, image prompt, video prompt, caption dan
+            CTA sebelum guna credit. Flow yang paling selamat sekarang ialah
+            satu image kuat, kemudian video 8s yang bergerak dari situasi ke
+            product moment.
           </p>
         </div>
 
-        <ManualLab />
+        <StoryLab />
       </section>
     </main>
   );

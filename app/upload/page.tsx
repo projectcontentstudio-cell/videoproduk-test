@@ -15,6 +15,12 @@ export default function UploadPage() {
             >
               Home
             </a>
+            <a
+              href="/story"
+              className="rounded-full border border-border px-3 py-1 text-xs font-bold text-slate-300 transition hover:border-primary hover:text-white"
+            >
+              Story Lab
+            </a>
             <span className="rounded-full border border-border px-3 py-1 text-xs font-bold text-slate-300">
               Langkah 1/6
             </span>
