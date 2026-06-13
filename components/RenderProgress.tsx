@@ -211,7 +211,7 @@ export function RenderProgress() {
       getProductAnalysisInstruction(scene),
       getCharacterInstruction(scene),
       `The main adult character must speak this Malay line naturally with visible lip movement and matching expression: "${dialogueLine}".`,
-      "Use adult characters only. Do not show children, babies, toddlers, minors, or child faces.",
+      "Use adult characters only. Do not show children, babies, toddlers, minors, school uniforms, child faces, or child-like bodies.",
       "Make the mouth visibly move while speaking. Do not make the clip silent.",
       getShopWatermarkInstruction()
     ].join(" ");
@@ -243,7 +243,7 @@ export function RenderProgress() {
       "Do not switch the hero action to an unrelated object. Use the uploaded product only.",
       `The main adult character must speak this Malay line naturally with visible lip movement and matching expression: "${solutionDialogue}".`,
       "Make the mouth visibly move while speaking. Do not make the clip silent.",
-      "Use adult characters only. Do not show children, babies, toddlers, minors, or child faces.",
+      "Use adult characters only. Do not show children, babies, toddlers, minors, school uniforms, child faces, or child-like bodies.",
       getShopWatermarkInstruction()
     ].join(" ");
   }
@@ -262,8 +262,9 @@ export function RenderProgress() {
       getCharacterInstruction(scene),
       sceneDescription,
       `The main adult character must speak this Malay line naturally with visible lip movement and matching expression: "${dialogueLine}".`,
-      "Use adult characters only. Do not show children, babies, toddlers, minors, or child faces.",
+      "Use adult characters only. Do not show children, babies, toddlers, minors, school uniforms, child faces, or child-like bodies.",
       "The speaking should fit the situation in the scene. Use natural small motion: facial expression, mouth movement, gentle hand gesture, slight camera push-in.",
+      "Keep emotions mild and ad-safe: relatable discomfort, mild concern, then calm relief. Avoid panic, crying, injury, medical claims, or dangerous actions.",
       "Do not make the clip silent.",
       getShopWatermarkInstruction()
     ].join(" ");

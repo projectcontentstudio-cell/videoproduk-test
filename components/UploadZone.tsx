@@ -479,60 +479,6 @@ export function UploadZone() {
             </div>
           ) : null}
 
-          {result?.productAnalysis ? (
-            <div className="rounded-2xl border border-primary/40 bg-primary/10 p-4">
-              <p className="text-sm font-black text-white">
-                Fakta produk dikesan
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-200">
-                {result.productAnalysis.summary ||
-                  `${result.productAnalysis.productType} dikesan daripada gambar.`}
-              </p>
-              <div className="mt-3 grid gap-2 text-xs leading-5 text-slate-300">
-                <p>
-                  <span className="font-bold text-white">Jenis:</span>{" "}
-                  {result.productAnalysis.productType}
-                </p>
-                {result.productAnalysis.colors.length ? (
-                  <p>
-                    <span className="font-bold text-white">Warna:</span>{" "}
-                    {result.productAnalysis.colors.join(", ")}
-                  </p>
-                ) : null}
-                {result.productAnalysis.keyFeatures.length ? (
-                  <p>
-                    <span className="font-bold text-white">Ciri:</span>{" "}
-                    {result.productAnalysis.keyFeatures.slice(0, 4).join(", ")}
-                  </p>
-                ) : null}
-                {result.productAnalysis.usageFacts.length ? (
-                  <p>
-                    <span className="font-bold text-white">Fakta guna:</span>{" "}
-                    {result.productAnalysis.usageFacts.slice(0, 4).join(", ")}
-                  </p>
-                ) : null}
-                {result.productAnalysis.avoidMistakes.length ? (
-                  <p>
-                    <span className="font-bold text-white">Elak salah:</span>{" "}
-                    {result.productAnalysis.avoidMistakes.slice(0, 4).join(", ")}
-                  </p>
-                ) : null}
-              </div>
-              <p className="mt-3 text-xs font-semibold text-primary">
-                {result.productAnalysis.searchMatched
-                  ? "Detail dipadankan dengan carian."
-                  : "Berdasarkan gambar sahaja."}
-              </p>
-            </div>
-          ) : null}
-
-          {result?.productAnalysisError ? (
-            <div className="rounded-2xl border border-amber-400/40 bg-amber-400/10 p-4 text-sm leading-6 text-amber-100">
-              Semakan detail produk tidak lengkap, tapi gambar diterima. Sistem
-              masih akan guna gambar upload sebagai rujukan utama.
-            </div>
-          ) : null}
-
           {result?.passed ? (
             <div className="rounded-2xl border border-primary/50 bg-primary/10 p-4">
               <p className="text-sm font-bold text-white">

@@ -6,6 +6,7 @@ import {
   getConfiguredBucketName,
   uploadGcsObject
 } from "@/lib/gcs";
+import { makeVeoPromptSafetySafe } from "@/lib/video-prompt-safety";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -308,7 +309,10 @@ export async function POST(request: Request) {
       attempt += 1;
 
       try {
-        operationName = await startVeoOperation(referenceSceneUrl, prompt);
+        operationName = await startVeoOperation(
+          referenceSceneUrl,
+          makeVeoPromptSafetySafe(prompt)
+        );
         output = await pollVeoOperation(operationName);
         break;
       } catch (error) {
