@@ -216,6 +216,8 @@ export function RenderProgress() {
       extractExtendPrompt(scene.manualVideoPrompt || "") ||
         script.scene2_video_prompt ||
         script.scene2_description,
+      "Strict object continuity: continue from the exact final frame only. Do not reset the scene. Do not resurrect, duplicate, or reintroduce any small prop that was moved away, placed aside, removed, hidden, or left behind in the base clip.",
+      "No new random props may appear during the extension. If an unrelated tissue, cloth, bottle, box, food, tool, bag, watch, or cosmetic is not the uploaded product, it must not become visible again or become part of the action.",
       "For the continuation, move from the first clip situation into the product benefit, demo, or showcase moment.",
       "Show the adult character naturally touching, holding, opening, wearing, using, or pointing to the product when relevant.",
       "Do not switch the hero action to an unrelated object. Use the uploaded product only.",

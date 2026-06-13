@@ -1173,6 +1173,8 @@ function buildExtendSceneVideoPrompt(input: GenerateImagesInput) {
     `Selected visual method: ${method}.`,
     `Continuation scene: ${input.script.scene2_description || input.script.scene1_description}`,
     "Keep the same adult character, same outfit, same room/location, same lighting, same camera angle/style, and same product appearance.",
+    "Strict object continuity: continue from the exact final frame only. Do not reset the scene. Do not resurrect, duplicate, or reintroduce any small prop that was moved away, placed aside, removed, hidden, or left behind in the base clip.",
+    "No new random props may appear during the extension. If an unrelated tissue, cloth, bottle, box, food, tool, bag, watch, or cosmetic is not the uploaded product, it must not become visible again or become part of the action.",
     "Now continue into the product benefit/action. The adult character should naturally pick up, hold, wear, open, use, press, spray, point to, organize with, or demonstrate the product according to what the product actually is.",
     "Do not switch to another object as the hero product. The product interaction must use the uploaded product only, not a random tissue, cloth, bottle, box, tool, or unrelated prop.",
     "Make the product action clear and specific, with natural hand movement and facial expression changing from problem/interest into relief/confidence.",
