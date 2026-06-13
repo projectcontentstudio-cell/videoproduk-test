@@ -305,12 +305,36 @@ function makeVeoPromptSafetySafe(prompt) {
   return [
     safePrompt,
     "Safety constraints: all visible people are adults aged 25 or older.",
-    "Do not show babies, children, toddlers, minors, child faces, school uniforms, or child-like bodies.",
+    "Keep the scene adult-only with mature adult proportions, adult wardrobe, and adult workplace or home-lifestyle context.",
     "Keep emotions mild and commercial-friendly: relatable discomfort, then calm relief.",
-    "Avoid intense distress, panic, crying, injury, medical claims, dangerous actions, or unsafe product use.",
+    "Keep every action calm, safe, simple, and suitable for a family-friendly product advertisement.",
     "Use natural small motion only, with clear product interaction and visible lip movement if dialogue is included.",
     "No subtitles, no on-screen text, no logo, no watermark."
   ].join(" ");
+}
+
+function makeUltraSafeVeoPrompt() {
+  return [
+    "Create one smooth vertical 9:16 TikTok Shop Malaysia product advertisement scene.",
+    "Show one adult presenter aged 25 or older in a clean home or work setting.",
+    "Keep the same visual style, product, room, lighting, and camera angle from the supplied reference.",
+    "The presenter calmly holds or points to the product, then shows a simple positive result.",
+    "The presenter says one short friendly Malay product line with visible lip movement.",
+    "Use only gentle hand movement, natural facial expression, and slight camera push-in.",
+    "Keep the scene calm, safe, simple, family-friendly, and product-focused.",
+    "No subtitles, no on-screen text, no logo, no watermark."
+  ].join(" ");
+}
+
+function isSafetyError(error) {
+  const lower = (error instanceof Error ? error.message : String(error)).toLowerCase();
+
+  return (
+    lower.includes("sensitive") ||
+    lower.includes("responsible ai") ||
+    lower.includes("safety") ||
+    lower.includes('"code":3')
+  );
 }
 
 async function referenceUrlToImage(referenceUrl) {
@@ -344,7 +368,7 @@ async function referenceUrlToImage(referenceUrl) {
   };
 }
 
-async function startVeoOperation(job) {
+async function startVeoOperation(job, overridePrompt) {
   const image = await referenceUrlToImage(job.data.referenceSceneUrl);
   const sceneKind = job.data.sceneKind ?? "solution";
   const dialogueLine =
@@ -372,10 +396,12 @@ async function startVeoOperation(job) {
     "One 8 second clip, product focused, clean commercial lighting, natural Malay creator energy.",
     "No on-screen fake UI, no subtitles, no extra text overlays, no logo."
   ].join(" ");
-  const prompt = makeVeoPromptSafetySafe(
-    job.data.manualVideoPrompt ||
-      (sceneKind === "problem" ? problemPrompt : solutionPrompt)
-  );
+  const prompt = overridePrompt
+    ? makeVeoPromptSafetySafe(overridePrompt)
+    : makeVeoPromptSafetySafe(
+        job.data.manualVideoPrompt ||
+          (sceneKind === "problem" ? problemPrompt : solutionPrompt)
+      );
   const instance = image ? { prompt, image } : { prompt };
   const response = await fetch(getVeoModelUrl("predictLongRunning"), {
     method: "POST",
@@ -509,7 +535,18 @@ async function generateVeoClip(job) {
     return mockClipPath;
   }
 
-  const operationName = await startVeoOperation(job);
+  let operationName;
+
+  try {
+    operationName = await startVeoOperation(job);
+  } catch (error) {
+    if (!isSafetyError(error)) {
+      throw error;
+    }
+
+    operationName = await startVeoOperation(job, makeUltraSafeVeoPrompt());
+  }
+
   const output = await pollVeoOperation(operationName, job);
   const veoClipPath = join(outputDir, `${job.id}-veo.mp4`);
 

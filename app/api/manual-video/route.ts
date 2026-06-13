@@ -6,7 +6,10 @@ import {
   getConfiguredBucketName,
   uploadGcsObject
 } from "@/lib/gcs";
-import { makeVeoPromptSafetySafe } from "@/lib/video-prompt-safety";
+import {
+  makeUltraSafeVeoPrompt,
+  makeVeoPromptSafetySafe
+} from "@/lib/video-prompt-safety";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -46,6 +49,18 @@ function isHighLoadError(error: unknown) {
     message.includes('"code":8') ||
     message.toLowerCase().includes("high load") ||
     message.toLowerCase().includes("resource exhausted")
+  );
+}
+
+function isSafetyError(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  const lower = message.toLowerCase();
+
+  return (
+    lower.includes("sensitive") ||
+    lower.includes("responsible ai") ||
+    lower.includes("safety") ||
+    lower.includes('"code":3')
   );
 }
 
@@ -304,18 +319,24 @@ export async function POST(request: Request) {
     let operationName = "";
     let output = "";
     let attempt = 0;
+    let activePrompt = makeVeoPromptSafetySafe(prompt);
+    let usedUltraSafePrompt = false;
 
     while (attempt < 6) {
       attempt += 1;
 
       try {
-        operationName = await startVeoOperation(
-          referenceSceneUrl,
-          makeVeoPromptSafetySafe(prompt)
-        );
+        operationName = await startVeoOperation(referenceSceneUrl, activePrompt);
         output = await pollVeoOperation(operationName);
         break;
       } catch (error) {
+        if (isSafetyError(error) && !usedUltraSafePrompt) {
+          usedUltraSafePrompt = true;
+          activePrompt = makeUltraSafeVeoPrompt("base");
+          await sleep(1000);
+          continue;
+        }
+
         if (attempt >= 6 || !isHighLoadError(error)) {
           throw error;
         }

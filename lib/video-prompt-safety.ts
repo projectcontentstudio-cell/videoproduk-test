@@ -36,10 +36,29 @@ export function makeVeoPromptSafetySafe(prompt: string) {
   return [
     safePrompt,
     "Safety constraints: all visible people are adults aged 25 or older.",
-    "Do not show babies, children, toddlers, minors, child faces, school uniforms, or child-like bodies.",
+    "Keep the scene adult-only with mature adult proportions, adult wardrobe, and adult workplace or home-lifestyle context.",
     "Keep emotions mild and commercial-friendly: relatable discomfort, then calm relief.",
-    "Avoid intense distress, panic, crying, injury, medical claims, dangerous actions, or unsafe product use.",
+    "Keep every action calm, safe, simple, and suitable for a family-friendly product advertisement.",
     "Use natural small motion only, with clear product interaction and visible lip movement if dialogue is included.",
+    "No subtitles, no on-screen text, no logo, no watermark."
+  ].join(" ");
+}
+
+export function makeUltraSafeVeoPrompt(kind: "base" | "extend") {
+  const action =
+    kind === "extend"
+      ? "Continue from the current frame as one smooth product advertisement scene."
+      : "Create one smooth product advertisement scene from the supplied image.";
+
+  return [
+    action,
+    "Vertical 9:16 TikTok Shop Malaysia style.",
+    "Show one adult presenter aged 25 or older in a clean home or work setting.",
+    "Keep the same visual style, product, room, lighting, and camera angle.",
+    "The presenter calmly holds or points to the product, then shows a simple positive result.",
+    "The presenter says one short friendly Malay product line with visible lip movement.",
+    "Use only gentle hand movement, natural facial expression, and slight camera push-in.",
+    "Keep the scene calm, safe, simple, family-friendly, and product-focused.",
     "No subtitles, no on-screen text, no logo, no watermark."
   ].join(" ");
 }
