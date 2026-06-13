@@ -13,6 +13,15 @@ export function getFriendlyErrorMessage(error: unknown, fallback: string) {
   }
 
   if (
+    lower.includes("permission_denied") ||
+    lower.includes("iam_permission_denied") ||
+    lower.includes("aiplatform.endpoints.predict") ||
+    lower.includes("permission") && lower.includes("denied")
+  ) {
+    return "Permission Vertex AI belum cukup untuk service account. Tambah role Agent Platform Administrator atau role yang ada aiplatform.endpoints.predict, kemudian cuba lagi.";
+  }
+
+  if (
     lower.includes("401") ||
     lower.includes("unauthenticated") ||
     lower.includes("invalid authentication") ||
