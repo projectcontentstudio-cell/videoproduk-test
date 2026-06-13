@@ -4,6 +4,15 @@ export function getFriendlyErrorMessage(error: unknown, fallback: string) {
   const lower = message.toLowerCase();
 
   if (
+    lower.includes("decoder routines") ||
+    lower.includes("private_key") ||
+    lower.includes("begin private key") ||
+    lower.includes("service account")
+  ) {
+    return "Google service account key tidak boleh dibaca. Paste semula GOOGLE_SERVICE_ACCOUNT_JSON penuh dari Google Cloud, atau gunakan format base64 full JSON.";
+  }
+
+  if (
     lower.includes("401") ||
     lower.includes("unauthenticated") ||
     lower.includes("invalid authentication") ||
