@@ -23,7 +23,8 @@ Variables utama:
 APP_PASSWORD=
 GOOGLE_CLOUD_PROJECT_ID=
 GOOGLE_CLOUD_REGION=asia-southeast1
-GOOGLE_VERTEX_ACCESS_TOKEN=
+GOOGLE_SERVICE_ACCOUNT_JSON=
+GOOGLE_AUTH_METHOD=service-account
 
 GEMINI_MODEL=gemini-2.5-flash
 GEMINI_PROMPT_MODEL=gemini-2.5-flash
@@ -40,7 +41,7 @@ IMAGEN_MOCK=false
 REDIS_URL=
 ```
 
-`GOOGLE_VERTEX_ACCESS_TOKEN` ialah token sementara. Bila token tamat, update value di Vercel dan redeploy/restart.
+Auth Google sekarang guna service account dahulu jika `GOOGLE_SERVICE_ACCOUNT_JSON` ada. Paste JSON service account sebagai satu env value di Vercel. `GOOGLE_VERTEX_ACCESS_TOKEN` masih boleh digunakan sebagai fallback token 1 jam, atau paksa dengan `GOOGLE_AUTH_METHOD=access-token`.
 
 ## Deploy Vercel
 

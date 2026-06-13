@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { createSign } from "node:crypto";
 import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -48,8 +49,123 @@ const connection = new IORedis(redisUrl, {
 });
 
 const outputDir = join(rootDir, ".rendered");
+let cachedGoogleToken = null;
 
-function getAccessToken() {
+function base64Url(input) {
+  return Buffer.from(input)
+    .toString("base64")
+    .replace(/=/g, "")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_");
+}
+
+function parseServiceAccount() {
+  const rawJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+
+  if (rawJson?.trim()) {
+    const normalized = rawJson.trim();
+    const json = normalized.startsWith("{")
+      ? normalized
+      : Buffer.from(normalized, "base64").toString("utf8");
+    const account = JSON.parse(json);
+
+    if (account.private_key) {
+      account.private_key = account.private_key.replace(/\\n/g, "\n");
+    }
+
+    return account;
+  }
+
+  const credentialsPath =
+    process.env.GOOGLE_APPLICATION_CREDENTIALS || "./service-account-key.json";
+
+  try {
+    const account = JSON.parse(
+      readFileSync(join(rootDir, credentialsPath), "utf8")
+    );
+
+    if (account.private_key) {
+      account.private_key = account.private_key.replace(/\\n/g, "\n");
+    }
+
+    return account;
+  } catch {
+    return null;
+  }
+}
+
+async function requestServiceAccountToken(account) {
+  const now = Math.floor(Date.now() / 1000);
+  const header = base64Url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
+  const claim = base64Url(
+    JSON.stringify({
+      iss: account.client_email,
+      scope: "https://www.googleapis.com/auth/cloud-platform",
+      aud: account.token_uri || "https://oauth2.googleapis.com/token",
+      iat: now,
+      exp: now + 3600
+    })
+  );
+  const unsignedJwt = `${header}.${claim}`;
+  const signer = createSign("RSA-SHA256");
+
+  signer.update(unsignedJwt);
+  signer.end();
+
+  const assertion = `${unsignedJwt}.${base64Url(
+    signer.sign(account.private_key)
+  )}`;
+  const response = await fetch(
+    account.token_uri || "https://oauth2.googleapis.com/token",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: new URLSearchParams({
+        grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+        assertion
+      })
+    }
+  );
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(
+      `Service account token gagal. Status ${response.status}. ${text.slice(0, 300)}`
+    );
+  }
+
+  const data = await response.json();
+
+  if (!data.access_token) {
+    throw new Error("Service account tidak pulangkan access token.");
+  }
+
+  cachedGoogleToken = {
+    token: data.access_token,
+    expiresAt: Date.now() + ((data.expires_in || 3600) - 120) * 1000
+  };
+
+  return data.access_token;
+}
+
+async function getAccessToken() {
+  if (cachedGoogleToken && cachedGoogleToken.expiresAt > Date.now()) {
+    return cachedGoogleToken.token;
+  }
+
+  const authMethod = process.env.GOOGLE_AUTH_METHOD?.trim().toLowerCase();
+  const serviceAccount = parseServiceAccount();
+
+  if (
+    authMethod !== "access-token" &&
+    serviceAccount?.client_email &&
+    serviceAccount.private_key
+  ) {
+    return requestServiceAccountToken(serviceAccount);
+  }
+
   let token = process.env.GOOGLE_VERTEX_ACCESS_TOKEN;
 
   try {
@@ -67,7 +183,13 @@ function getAccessToken() {
   }
 
   if (!token) {
-    throw new Error("GOOGLE_VERTEX_ACCESS_TOKEN belum ditetapkan.");
+    if (serviceAccount?.client_email && serviceAccount.private_key) {
+      return requestServiceAccountToken(serviceAccount);
+    }
+
+    throw new Error(
+      "Google auth belum ditetapkan. Guna GOOGLE_SERVICE_ACCOUNT_JSON atau GOOGLE_VERTEX_ACCESS_TOKEN."
+    );
   }
 
   return token;
@@ -169,7 +291,7 @@ async function startVeoOperation(job) {
   const response = await fetch(getVeoModelUrl("predictLongRunning"), {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${getAccessToken()}`,
+      Authorization: `Bearer ${await getAccessToken()}`,
       "Content-Type": "application/json"
     },
     body: JSON.stringify({
@@ -210,7 +332,7 @@ async function pollVeoOperation(operationName, job) {
     const response = await fetch(getVeoModelUrl("fetchPredictOperation"), {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${getAccessToken()}`,
+        Authorization: `Bearer ${await getAccessToken()}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({

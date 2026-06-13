@@ -47,16 +47,28 @@ function parseServiceAccount() {
       ? normalized
       : Buffer.from(normalized, "base64").toString("utf8");
 
-    return JSON.parse(json) as ServiceAccount;
+    const account = JSON.parse(json) as ServiceAccount;
+
+    if (account.private_key) {
+      account.private_key = account.private_key.replace(/\\n/g, "\n");
+    }
+
+    return account;
   }
 
   const credentialsPath =
     process.env.GOOGLE_APPLICATION_CREDENTIALS || "./service-account-key.json";
 
   try {
-    return JSON.parse(
+    const account = JSON.parse(
       readFileSync(join(process.cwd(), credentialsPath), "utf8")
     ) as ServiceAccount;
+
+    if (account.private_key) {
+      account.private_key = account.private_key.replace(/\\n/g, "\n");
+    }
+
+    return account;
   } catch {
     return null;
   }
@@ -125,19 +137,28 @@ export async function getGoogleAccessToken() {
     return cachedToken.token;
   }
 
+  const authMethod = process.env.GOOGLE_AUTH_METHOD?.trim().toLowerCase();
+  const serviceAccount = parseServiceAccount();
+
+  if (
+    authMethod !== "access-token" &&
+    serviceAccount?.client_email &&
+    serviceAccount.private_key
+  ) {
+    return requestServiceAccountToken(serviceAccount);
+  }
+
   const token = readEnvAccessToken();
 
   if (token) {
     return token;
   }
 
-  const serviceAccount = parseServiceAccount();
-
   if (serviceAccount?.client_email && serviceAccount.private_key) {
     return requestServiceAccountToken(serviceAccount);
   }
 
   throw new Error(
-    "Google auth belum ditetapkan. Guna GOOGLE_VERTEX_ACCESS_TOKEN untuk token 1 jam, atau GOOGLE_SERVICE_ACCOUNT_JSON untuk service account."
+    "Google auth belum ditetapkan. Guna GOOGLE_SERVICE_ACCOUNT_JSON untuk service account, atau GOOGLE_VERTEX_ACCESS_TOKEN untuk token 1 jam."
   );
 }
