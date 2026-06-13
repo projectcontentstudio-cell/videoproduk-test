@@ -30,6 +30,10 @@ function parseBody(body: Partial<GenerateScriptInput>): GenerateScriptInput {
     productPrice: body.productPrice?.trim() || "RM0",
     style:
       body.style === "realistic-ugc" ? "realistic-ugc" : "3d-character",
+    characterGender:
+      body.characterGender === "male" || body.characterGender === "female"
+        ? body.characterGender
+        : "auto",
     productImageBase64: body.productImageBase64,
     productImageMimeType: body.productImageMimeType,
     productAnalysis:

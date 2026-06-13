@@ -20,6 +20,7 @@ export type GenerateImagesInput = {
   style?: string;
   shopWatermark?: string;
   productAnalysis?: string;
+  characterGender?: "auto" | "male" | "female";
 };
 
 export type GeneratedImages = {
@@ -107,6 +108,18 @@ function getProductAnalysisRule(input: Pick<GenerateImagesInput, "productAnalysi
     facts,
     "Do not contradict these facts. If the facts say portable, rechargeable, battery powered, no visible cable, or compact travel design, do not add cable, power cord, wall plug, wired version, wrong color, wrong shape, or unrelated accessories. Do not introduce a different hero product or random prop such as tissue, bottle, box, food, tool, bag, watch, or cosmetic unless it is the uploaded product or clearly relevant background prop. Preserve the product type, visible colors, shape, usage facts, and avoid-mistakes list."
   ].join("\n");
+}
+
+function getCharacterRule(input: Pick<GenerateImagesInput, "characterGender">) {
+  if (input.characterGender === "male") {
+    return "Main character rule: use one adult Malaysian male character as the main person. Keep him male in the image, base video, and extension. Do not switch to a female character.";
+  }
+
+  if (input.characterGender === "female") {
+    return "Main character rule: use one adult Malaysian female character as the main person. Keep her female in the image, base video, and extension. Do not switch to a male character.";
+  }
+
+  return "Main character rule: choose one adult Malaysian character that best fits the product and keep the same character consistent in image, base video, and extension.";
 }
 
 function getVertexPredictUrl() {
@@ -1122,6 +1135,7 @@ function buildSingleSceneImagePrompt(input: GenerateImagesInput) {
   const method = input.script.visual_method || "problem_solution";
   const watermarkRule = getShopWatermarkRule(input);
   const productFacts = getProductAnalysisRule(input);
+  const characterRule = getCharacterRule(input);
 
   return [
     `Create one vertical 9:16 ${getStylePrompt(input.style)} image for a TikTok Shop Malaysia seller video.`,
@@ -1130,6 +1144,7 @@ function buildSingleSceneImagePrompt(input: GenerateImagesInput) {
     }`,
     `Use this exact base scene: ${input.script.scene1_description}`,
     productFacts,
+    characterRule,
     `The product is ${input.productName}. The uploaded product reference must appear clearly in the same scene. Preserve the exact main color, color blocking, shape, pack/form factor, silhouette, label layout, and overall visual identity from the reference image as clearly as possible. Do not recolor the product. If the reference product is dark blue, black, pink, white, or any other color, keep that same dominant color on the product.`,
     "Follow the selected visual method, not a fixed problem-solution formula. If the method is problem_solution or before_after, show the customer pain with the product visible nearby. If the method is showcase, make the product the attractive hero in a lifestyle/fashion/product-focus scene. If the method is demo or lifestyle_use, show the product ready to be used naturally in context.",
     "For showcase specifically: create one single coherent lifestyle scene only. Do not create a catalog layout, split-screen, collage, product-only top section, multiple color variants, floating cutout, ecommerce poster, or product grid. Show one main product naturally worn, held, placed, or displayed in the scene with an adult character or lifestyle setting.",
@@ -1144,11 +1159,13 @@ function buildSingleSceneVideoPrompt(input: GenerateImagesInput) {
   const method = input.script.visual_method || "problem_solution";
   const watermarkRule = getShopWatermarkRule(input);
   const productFacts = getProductAnalysisRule(input);
+  const characterRule = getCharacterRule(input);
 
   return [
     "Create one 8-second vertical 9:16 image-to-video BASE clip using this image as the first frame.",
     `Product: ${input.productName}.`,
     productFacts,
+    characterRule,
     `Selected visual method: ${method}.`,
     `Full scene setup: ${input.script.scene1_description}`,
     "Write the motion like a production prompt, not a generic scene. Clearly describe the adult character, the room/location, the emotion, the hand/body action, and where the product is visible in the frame.",
@@ -1164,12 +1181,14 @@ function buildExtendSceneVideoPrompt(input: GenerateImagesInput) {
   const method = input.script.visual_method || "problem_solution";
   const watermarkRule = getShopWatermarkRule(input);
   const productFacts = getProductAnalysisRule(input);
+  const characterRule = getCharacterRule(input);
 
   return [
     "EXTEND VIDEO PROMPT: Continue this exact vertical 9:16 product video from the final frame of the base clip.",
     "The extended output should feel like one complete 16-second TikTok Shop Malaysia video, not a new scene and not a hard reset.",
     `Product: ${input.productName}.`,
     productFacts,
+    characterRule,
     `Selected visual method: ${method}.`,
     `Continuation scene: ${input.script.scene2_description || input.script.scene1_description}`,
     "Keep the same adult character, same outfit, same room/location, same lighting, same camera angle/style, and same product appearance.",
@@ -1266,6 +1285,13 @@ Malay dialogue line from script, use this exact line in video_prompt: ${input.sc
 Gemini-selected visual method from script: ${input.script.visual_method || "problem_solution"}
 Reason for method: ${input.script.visual_method_reason || "Method selected by script planner."}
 Selected style: ${input.style || "3d-character"}
+Character choice: ${
+  input.characterGender === "male"
+    ? "adult male"
+    : input.characterGender === "female"
+      ? "adult female"
+      : "auto, choose the most suitable adult character"
+}
 Hard product facts from upload analysis:
 ${input.productAnalysis?.trim() || "No additional product facts available."}
 
@@ -1280,6 +1306,7 @@ Rules for image_prompt:
 - Realistic Malaysian UGC/social-commerce phone-camera style if style is realistic-ugc. For realistic-ugc, do not use 3D, cartoon, CGI, clay, toy, Pixar-like, anime, or illustrated style.
 - Follow the shop watermark rule exactly.
 - Keep it product-ad friendly and family-safe.
+- Follow character choice exactly. If adult male/female is selected, use that gender consistently and do not switch gender.
 - Follow the Gemini-selected visual method from the script. Do not force problem-solution if the method is showcase, demo, or lifestyle_use.
 - For problem_solution or before_after: show customer pain plus the uploaded product clearly inside the same scene at the side / on table / within reach.
 - For showcase: show the product attractively as the hero in a lifestyle/product-focus scene; no fake problem is needed.
@@ -1296,6 +1323,7 @@ Rules for video_prompt:
 - If method is showcase, use introduce product > show/wear/hold product > confident product close-up.
 - If method is demo/lifestyle_use, use context > simple product use > satisfying result.
 - The main adult character must speak one short natural Malay line with visible lip movement.
+- The speaking character must follow the selected character choice and remain the same person from image to video extension.
 - Use the exact Malay dialogue line from the script. Do not replace it with a generic line.
 - Use natural small motion only.
 - Veo safety: avoid children, babies, toddlers, minors, child faces, and child bodies. Prefer adult-only scenes; for baby/kids products show only adult caregiver and neutral props.

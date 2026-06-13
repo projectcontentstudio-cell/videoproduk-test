@@ -15,13 +15,14 @@ function clearPreviewFlow() {
   localStorage.removeItem("videoproduk_render_result");
 }
 
-function getScriptCacheKey(productName: string, style: string) {
+function getScriptCacheKey(productName: string, style: string, characterGender: string) {
   const image = localStorage.getItem("videoproduk_product_image") || "";
   const productAnalysis =
     localStorage.getItem("videoproduk_product_analysis") || "";
   return JSON.stringify({
     productName,
     style,
+    characterGender,
     imageLength: image.length,
     imageHead: image.slice(0, 80),
     imageTail: image.slice(-80),
@@ -88,6 +89,8 @@ export function ScriptPreview() {
     const productPrice =
       localStorage.getItem("videoproduk_product_price") || "RM0";
     const style = localStorage.getItem("videoproduk_image_style") || "3d-character";
+    const characterGender =
+      localStorage.getItem("videoproduk_character_gender") || "auto";
 
     setState({ status: "loading", script: null, error: "" });
 
@@ -102,6 +105,7 @@ export function ScriptPreview() {
           productName,
           productPrice,
           style,
+          characterGender,
           productAnalysis:
             localStorage.getItem("videoproduk_product_analysis") || "",
           ...imagePayload
@@ -117,7 +121,7 @@ export function ScriptPreview() {
       localStorage.setItem("videoproduk_script", JSON.stringify(data.script));
       localStorage.setItem(
         "videoproduk_script_cache_key",
-        getScriptCacheKey(productName, style)
+        getScriptCacheKey(productName, style, characterGender)
       );
       setState({ status: "success", script: data.script, error: "" });
     } catch (error) {
@@ -133,9 +137,11 @@ export function ScriptPreview() {
     const productName =
       localStorage.getItem("videoproduk_product_name") || "Mini Chopper Pro";
     const style = localStorage.getItem("videoproduk_image_style") || "3d-character";
+    const characterGender =
+      localStorage.getItem("videoproduk_character_gender") || "auto";
     const storedScript = localStorage.getItem("videoproduk_script");
     const storedCacheKey = localStorage.getItem("videoproduk_script_cache_key");
-    const currentCacheKey = getScriptCacheKey(productName, style);
+    const currentCacheKey = getScriptCacheKey(productName, style, characterGender);
 
     const parsedScript =
       storedScript && storedCacheKey === currentCacheKey

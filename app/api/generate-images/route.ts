@@ -57,6 +57,10 @@ function parseBody(body: Partial<GenerateImagesInput>): GenerateImagesInput {
     script: body.script,
     quality: body.quality === "final" ? "final" : "preview",
     style: body.style || "3d-character",
+    characterGender:
+      body.characterGender === "male" || body.characterGender === "female"
+        ? body.characterGender
+        : "auto",
     shopWatermark: sanitizeShopWatermark(body.shopWatermark),
     productAnalysis:
       typeof body.productAnalysis === "string"

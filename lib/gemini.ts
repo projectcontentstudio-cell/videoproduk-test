@@ -24,6 +24,7 @@ export type GenerateScriptInput = {
   productImageBase64: string;
   productImageMimeType: "image/jpeg" | "image/png";
   productAnalysis?: string;
+  characterGender?: "auto" | "male" | "female";
 };
 
 const geminiModel = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
@@ -40,6 +41,7 @@ Style visual dipilih oleh user:
 - 3D Cartoon: scene dan video prompt mesti guna polished 3D cartoon/ad style.
 - Realistic UGC: scene dan video prompt mesti guna realistic Malaysian UGC/social commerce style, natural phone-camera look, adult human creator/seller, bukan 3D, bukan cartoon.
 Flow, rules, dialog, CTA dan struktur output kekal sama untuk semua style.
+Jika user pilih watak lelaki/perempuan, semua scene, image prompt, video prompt, dialog, dan sambungan video mesti kekalkan gender itu. Jangan tukar gender antara base dan sambungan. Jika Auto, pilih watak dewasa yang paling sesuai dengan produk.
 Gemini mesti pilih visual_method yang paling sesuai untuk produk, jangan paksa semua produk jadi problem-solution.
 Pilihan method:
 - problem_solution: untuk produk yang jelas selesaikan pain point, contoh kipas, cleaner, storage, alat dapur.
@@ -295,9 +297,15 @@ export async function generateScriptWithGemini(input: GenerateScriptInput) {
             {
               text: `Nama produk: ${input.productName}\nStyle visual: ${
                 input.style === "realistic-ugc" ? "Realistic UGC" : "3D Cartoon"
+              }\nPilihan watak: ${
+                input.characterGender === "male"
+                  ? "lelaki dewasa"
+                  : input.characterGender === "female"
+                    ? "perempuan dewasa"
+                    : "auto, pilih watak dewasa paling sesuai"
               }\nFakta produk daripada semakan upload:\n${
                 input.productAnalysis?.trim() || "Tiada semakan tambahan."
-              }\n\nHasilkan JSON skrip TikTok Shop Malaysia berdasarkan gambar produk ini. Scene dan video prompt mesti sesuai dengan style visual tersebut. Jangan masukkan harga dalam skrip, caption, image prompt, atau video prompt. Jangan bercanggah dengan fakta produk daripada semakan upload.`
+              }\n\nHasilkan JSON skrip TikTok Shop Malaysia berdasarkan gambar produk ini. Scene dan video prompt mesti sesuai dengan style visual tersebut. Jangan masukkan harga dalam skrip, caption, image prompt, atau video prompt. Jangan bercanggah dengan fakta produk daripada semakan upload. Ikut pilihan watak dengan konsisten.`
             },
             {
               inlineData: {

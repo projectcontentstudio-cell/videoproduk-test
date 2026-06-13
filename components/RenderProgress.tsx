@@ -20,6 +20,7 @@ type SelectedScene = {
   dialogueLine?: string;
   manualVideoPrompt?: string;
   productAnalysis?: string;
+  characterGender?: "auto" | "male" | "female";
 };
 
 type RenderState =
@@ -67,6 +68,23 @@ function getProductAnalysisInstruction(scene?: SelectedScene | null) {
     facts.trim(),
     "Do not contradict these facts. If the facts say portable, rechargeable, battery powered, no visible cable, or compact travel design, do not add cable, power cord, wall plug, wired version, wrong color, wrong shape, or unrelated accessories. Do not switch to a random hero object such as tissue, cloth, bottle, box, food, tool, bag, watch, or cosmetic unless it is the uploaded product. The character must interact with the uploaded product only."
   ].join(" ");
+}
+
+function getCharacterInstruction(scene?: SelectedScene | null) {
+  const gender =
+    scene?.characterGender ||
+    localStorage.getItem("videoproduk_character_gender") ||
+    "auto";
+
+  if (gender === "male") {
+    return "Use the same adult male character from the first frame. Do not change to a female character.";
+  }
+
+  if (gender === "female") {
+    return "Use the same adult female character from the first frame. Do not change to a male character.";
+  }
+
+  return "Keep the same adult character from the first frame throughout the video.";
 }
 
 function getStoredScript(): GeneratedScript {
@@ -191,6 +209,7 @@ export function RenderProgress() {
       basePrompt.replace(/\b6-second\b/gi, "8-second").replace(/\b6 seconds\b/gi, "8 seconds"),
       "Duration must be exactly 8 seconds.",
       getProductAnalysisInstruction(scene),
+      getCharacterInstruction(scene),
       `The main adult character must speak this Malay line naturally with visible lip movement and matching expression: "${dialogueLine}".`,
       "Use adult characters only. Do not show children, babies, toddlers, minors, or child faces.",
       "Make the mouth visibly move while speaking. Do not make the clip silent.",
@@ -212,6 +231,7 @@ export function RenderProgress() {
       "Keep the same adult character, same product, same room/location, same lighting, same camera style, and same visual identity.",
       `Selected visual method: ${selectedMethod}.`,
       getProductAnalysisInstruction(scene),
+      getCharacterInstruction(scene),
       scene.sceneDescription || script.scene1_description,
       extractExtendPrompt(scene.manualVideoPrompt || "") ||
         script.scene2_video_prompt ||
@@ -239,6 +259,7 @@ export function RenderProgress() {
     return [
       "Create one 8-second vertical 9:16 image-to-video clip using the supplied image as the first frame.",
       getProductAnalysisInstruction(scene),
+      getCharacterInstruction(scene),
       sceneDescription,
       `The main adult character must speak this Malay line naturally with visible lip movement and matching expression: "${dialogueLine}".`,
       "Use adult characters only. Do not show children, babies, toddlers, minors, or child faces.",

@@ -31,6 +31,24 @@ const visualStyles = [
   }
 ] as const;
 
+const characterOptions = [
+  {
+    id: "auto",
+    label: "Auto",
+    detail: "Sistem pilih watak paling sesuai."
+  },
+  {
+    id: "female",
+    label: "Perempuan",
+    detail: "Watak utama perempuan dewasa."
+  },
+  {
+    id: "male",
+    label: "Lelaki",
+    detail: "Watak utama lelaki dewasa."
+  }
+] as const;
+
 function clearGeneratedFlow() {
   localStorage.removeItem("videoproduk_scene_images");
   localStorage.removeItem("videoproduk_selected_scene");
@@ -44,6 +62,7 @@ function clearGeneratedFlow() {
 export function ProductForm() {
   const [productName, setProductName] = useState("");
   const [selectedStyle, setSelectedStyle] = useState("3d-character");
+  const [selectedCharacter, setSelectedCharacter] = useState("auto");
   const [acceptedBetaRules, setAcceptedBetaRules] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -58,6 +77,20 @@ export function ProductForm() {
       setSelectedStyle(storedStyle);
     } else {
       localStorage.setItem("videoproduk_image_style", "3d-character");
+    }
+
+    const storedCharacter = localStorage.getItem(
+      "videoproduk_character_gender"
+    );
+
+    if (
+      storedCharacter === "male" ||
+      storedCharacter === "female" ||
+      storedCharacter === "auto"
+    ) {
+      setSelectedCharacter(storedCharacter);
+    } else {
+      localStorage.setItem("videoproduk_character_gender", "auto");
     }
 
     const storedAnalysis = localStorage.getItem("videoproduk_product_analysis");
@@ -100,17 +133,29 @@ export function ProductForm() {
     setIsSubmitting(true);
     const previousName = localStorage.getItem("videoproduk_product_name");
     const previousStyle = localStorage.getItem("videoproduk_image_style");
+    const previousCharacter = localStorage.getItem(
+      "videoproduk_character_gender"
+    );
     const nextName = productName.trim();
     const nextStyle =
       selectedStyle === "realistic-ugc" ? "realistic-ugc" : "3d-character";
+    const nextCharacter =
+      selectedCharacter === "male" || selectedCharacter === "female"
+        ? selectedCharacter
+        : "auto";
 
-    if (previousName !== nextName || previousStyle !== nextStyle) {
+    if (
+      previousName !== nextName ||
+      previousStyle !== nextStyle ||
+      previousCharacter !== nextCharacter
+    ) {
       clearGeneratedFlow();
     }
 
     localStorage.setItem("videoproduk_product_name", nextName);
     localStorage.setItem("videoproduk_product_price", "RM0");
     localStorage.setItem("videoproduk_image_style", nextStyle);
+    localStorage.setItem("videoproduk_character_gender", nextCharacter);
     window.location.href = "/script";
   }
 
@@ -180,6 +225,45 @@ export function ProductForm() {
                 </span>
                 <span className="mt-1 block text-sm leading-6 text-slate-300">
                   {style.detail}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-border bg-surface p-4">
+        <p className="text-sm font-black text-white">Watak</p>
+        <p className="mt-1 text-sm leading-6 text-slate-300">
+          Pilih watak utama untuk image dan video.
+        </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          {characterOptions.map((option) => {
+            const selected = selectedCharacter === option.id;
+
+            return (
+              <button
+                key={option.id}
+                type="button"
+                disabled={isSubmitting}
+                onClick={() => {
+                  setSelectedCharacter(option.id);
+                  localStorage.setItem(
+                    "videoproduk_character_gender",
+                    option.id
+                  );
+                }}
+                className={`rounded-2xl border p-4 text-left transition ${
+                  selected
+                    ? "border-primary bg-primary/10 shadow-glow"
+                    : "border-border bg-black/20 hover:border-primary/60"
+                } disabled:cursor-not-allowed disabled:opacity-60`}
+              >
+                <span className="block text-sm font-black text-white">
+                  {option.label}
+                </span>
+                <span className="mt-1 block text-sm leading-6 text-slate-300">
+                  {option.detail}
                 </span>
               </button>
             );

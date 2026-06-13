@@ -224,6 +224,8 @@ export function ImagePreview() {
       script: getStoredScript(),
       quality: "preview",
       style: localStorage.getItem("videoproduk_image_style") || "3d-character",
+      characterGender:
+        localStorage.getItem("videoproduk_character_gender") || "auto",
       shopWatermark: ensureShopWatermarkPreference(),
       productAnalysis:
         localStorage.getItem("videoproduk_product_analysis") || ""
@@ -401,7 +403,9 @@ export function ImagePreview() {
               script?.cta ||
               "Ini solusi cepat.",
         productAnalysis:
-          localStorage.getItem("videoproduk_product_analysis") || ""
+          localStorage.getItem("videoproduk_product_analysis") || "",
+        characterGender:
+          localStorage.getItem("videoproduk_character_gender") || "auto"
       })
     );
     window.location.href = "/render";
