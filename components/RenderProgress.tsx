@@ -216,7 +216,8 @@ export function RenderProgress() {
       getCharacterInstruction(scene),
       `The main adult character must speak this Malay line naturally with visible lip movement and matching expression: "${dialogueLine}".`,
       "Use adult-only scenes with mature adult proportions, adult wardrobe, and adult home or workplace context.",
-      "Make the mouth visibly move while speaking. Do not make the clip silent.",
+      "Use medium shot framing and avoid close-up face changes. Make the mouth subtly move while speaking. Do not make the clip silent.",
+      "Keep emotions mild and commercial-friendly. No panic, crying, sickness, injury, fight, fear, or distress.",
       getShopWatermarkInstruction()
     ].join(" ");
   }
@@ -246,8 +247,9 @@ export function RenderProgress() {
       "Show the adult character naturally touching, holding, opening, wearing, using, or pointing to the product when relevant.",
       "Do not switch the hero action to an unrelated object. Use the uploaded product only.",
       `The main adult character must speak this Malay line naturally with visible lip movement and matching expression: "${solutionDialogue}".`,
-      "Make the mouth visibly move while speaking. Do not make the clip silent.",
+      "Use medium shot framing and avoid close-up face changes. Make the mouth subtly move while speaking. Do not make the clip silent.",
       "Use adult-only scenes with mature adult proportions, adult wardrobe, and adult home or workplace context.",
+      "Keep emotions mild and commercial-friendly. No panic, crying, sickness, injury, fight, fear, or distress.",
       getShopWatermarkInstruction()
     ].join(" ");
   }
@@ -267,8 +269,8 @@ export function RenderProgress() {
       sceneDescription,
       `The main adult character must speak this Malay line naturally with visible lip movement and matching expression: "${dialogueLine}".`,
       "Use adult-only scenes with mature adult proportions, adult wardrobe, and adult home or workplace context.",
-      "The speaking should fit the situation in the scene. Use natural small motion: facial expression, mouth movement, gentle hand gesture, slight camera push-in.",
-      "Keep emotions mild and ad-safe: relatable discomfort, mild concern, then calm relief. Every action should be calm, safe, simple, and suitable for a family-friendly product advertisement.",
+      "The speaking should fit the situation in the scene. Use medium shot framing, subtle mouth movement, gentle hand gesture, and slight camera push-in.",
+      "Keep emotions mild and ad-safe: everyday inconvenience, mild concern, then calm relief. No panic, crying, sickness, injury, fight, fear, or distress.",
       "Do not make the clip silent.",
       getShopWatermarkInstruction()
     ].join(" ");

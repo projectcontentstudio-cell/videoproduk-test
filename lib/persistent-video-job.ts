@@ -3,7 +3,10 @@
 import type { RenderJobResult } from "@/lib/render-types";
 import { trackSuccessfulVideoGeneration } from "@/lib/client-usage-store";
 import { saveVideoLibraryItem } from "@/lib/video-library";
-import { makeUltraSafeVeoPrompt } from "@/lib/video-prompt-safety";
+import {
+  makeProductOnlyVeoPrompt,
+  makeUltraSafeVeoPrompt
+} from "@/lib/video-prompt-safety";
 
 export const videoJobStorageKey = "videoproduk_active_video_job_v1";
 const videoJobEventName = "videoproduk-video-job-update";
@@ -22,6 +25,8 @@ export type PersistentVideoJob = {
   extendOperationName?: string;
   baseSafetyFallbackUsed?: boolean;
   extendSafetyFallbackUsed?: boolean;
+  baseProductOnlyFallbackUsed?: boolean;
+  extendProductOnlyFallbackUsed?: boolean;
   baseVideoGcsUri?: string;
   extendedVideoGcsUri?: string;
   videoUrl?: string;
@@ -284,6 +289,23 @@ export async function continuePersistentVideoJob() {
 
         if (
           isSafetyBlock(error) &&
+          (job.phase === "start-base" || job.phase === "poll-base") &&
+          job.baseSafetyFallbackUsed &&
+          !job.baseProductOnlyFallbackUsed
+        ) {
+          savePersistentVideoJob({
+            ...job,
+            phase: "start-base",
+            basePrompt: makeProductOnlyVeoPrompt("base"),
+            baseOperationName: undefined,
+            baseProductOnlyFallbackUsed: true,
+            error: undefined
+          });
+          continue;
+        }
+
+        if (
+          isSafetyBlock(error) &&
           (job.phase === "start-extend" || job.phase === "poll-extend") &&
           !job.extendSafetyFallbackUsed
         ) {
@@ -293,6 +315,23 @@ export async function continuePersistentVideoJob() {
             extendPrompt: makeUltraSafeVeoPrompt("extend"),
             extendOperationName: undefined,
             extendSafetyFallbackUsed: true,
+            error: undefined
+          });
+          continue;
+        }
+
+        if (
+          isSafetyBlock(error) &&
+          (job.phase === "start-extend" || job.phase === "poll-extend") &&
+          job.extendSafetyFallbackUsed &&
+          !job.extendProductOnlyFallbackUsed
+        ) {
+          savePersistentVideoJob({
+            ...job,
+            phase: "start-extend",
+            extendPrompt: makeProductOnlyVeoPrompt("extend"),
+            extendOperationName: undefined,
+            extendProductOnlyFallbackUsed: true,
             error: undefined
           });
           continue;
