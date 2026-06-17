@@ -36,6 +36,10 @@ type RenderState =
 const shopWatermarkEnabledKey = "videoproduk_shop_watermark_enabled";
 const shopWatermarkNameKey = "videoproduk_shop_watermark_name";
 
+function countWords(value: string) {
+  return value.trim().split(/\s+/).filter(Boolean).length;
+}
+
 function sanitizeShopWatermark(value: string) {
   return value
     .replace(/[^\w\s.-]/g, "")
@@ -99,14 +103,16 @@ function getStoredScript(): GeneratedScript {
       hook: "Produk ni memang jimat masa!",
       scene1_description: "Problem angle produk.",
       scene1_subtitle: "Masalah biasa korang",
-      scene1_video_script: "Aduh, masalah ni memang susah nak settle.",
+      scene1_video_script:
+        "Aduh, masalah ni memang susah nak settle, kerja jadi lambat dan rasa serabut setiap kali buat.",
       scene1_video_prompt:
-        'Create one 8-second vertical 9:16 image-to-video clip from this problem image. The main adult character says in Malay with visible lip movement: "Aduh, masalah ni memang susah nak settle." Show natural small motion and frustrated expression. No subtitles, no on-screen text, no logo.',
+        'Create one 8-second vertical 9:16 image-to-video clip from this problem image. The main adult character says in Malay with visible lip movement: "Aduh, masalah ni memang susah nak settle, kerja jadi lambat dan rasa serabut setiap kali buat." Show natural small motion and mild frustrated expression. No subtitles, no on-screen text, no logo.',
       scene2_description: "Product angle produk.",
       scene2_subtitle: "Ni solusi cepat",
-      scene2_video_script: "Ha, guna ni terus nampak senang.",
+      scene2_video_script:
+        "Ha, lepas cuba produk ni, kerja terus nampak lebih mudah, kemas, dan sesuai guna hari-hari.",
       scene2_video_prompt:
-        'Continue this exact vertical 9:16 product video from the final frame into the solution/product demo moment. The main adult character says in Malay with visible lip movement: "Ha, guna ni terus nampak senang." Show natural product interaction, relieved expression, and clear product benefit. No subtitles, no on-screen text, no logo.',
+        'Continue this exact vertical 9:16 product video from the final frame into the solution/product demo moment. The main adult character says in Malay with visible lip movement: "Ha, lepas cuba produk ni, kerja terus nampak lebih mudah, kemas, dan sesuai guna hari-hari." Show natural product interaction, relieved expression, and clear product benefit. No subtitles, no on-screen text, no logo.',
       cta: "Klik beg kuning sekarang!",
       caption: "Produk ni sesuai untuk content TikTok Shop. Check beg kuning sekarang.",
       hashtags: ["#TikTokShopMY", "#RacunTikTok", "#BarangBest", "#VideoProduk", "#Malaysia"]
@@ -193,13 +199,32 @@ export function RenderProgress() {
   const [progressTimerId, setProgressTimerId] = useState<number | null>(null);
   const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null);
 
+  function getProductName() {
+    return localStorage.getItem("videoproduk_product_name") || "produk ni";
+  }
+
+  function getEightSecondFallbackDialogue(scene: SelectedScene) {
+    const productName = getProductName();
+
+    if (scene.sceneKind === "problem") {
+      return `Aduh, cara lama ni buat kerja jadi lambat, nasib baik ${productName} nampak boleh bantu hari ni.`;
+    }
+
+    return `Ha, lepas cuba ${productName}, kerja jadi lebih mudah, nampak kemas, dan sesuai guna setiap hari.`;
+  }
+
   function getDialogueLine(scene: SelectedScene, script: GeneratedScript) {
-    return (
+    const candidate =
       scene.dialogueLine ||
       (scene.sceneKind === "problem"
         ? script.scene1_video_script || script.scene1_subtitle
-        : script.scene2_video_script || script.scene2_subtitle)
-    );
+        : script.scene2_video_script || script.scene2_subtitle);
+
+    if (!candidate || candidate.trim().length < 65 || countWords(candidate) < 10) {
+      return getEightSecondFallbackDialogue(scene);
+    }
+
+    return candidate;
   }
 
   function enforceEightSecondSpeechPrompt(
@@ -223,12 +248,20 @@ export function RenderProgress() {
   }
 
   function buildExtendVideoPrompt(scene: SelectedScene, script: GeneratedScript) {
-    const solutionDialogue =
-      script.scene2_video_script ||
-      script.scene2_subtitle ||
-      script.cta ||
-      "Ha, ini baru senang, cepat terus boleh guna.";
+    const solutionDialogue = getDialogueLine(
+      { ...scene, sceneKind: "solution", dialogueLine: script.scene2_video_script },
+      script
+    );
     const selectedMethod = script.visual_method || "problem_solution";
+    const continuationGoal =
+      extractExtendPrompt(scene.manualVideoPrompt || "") ||
+      script.scene2_video_prompt ||
+      script.scene2_description ||
+      "Move into the product use, visible benefit, satisfying result, and confident ending.";
+    const baseContext =
+      script.scene1_description ||
+      scene.sceneDescription ||
+      "The first 8 seconds introduced the setup or problem.";
 
     return [
       "Continue this exact vertical 9:16 product video from the final frame.",
@@ -237,13 +270,11 @@ export function RenderProgress() {
       `Selected visual method: ${selectedMethod}.`,
       getProductAnalysisInstruction(scene),
       getCharacterInstruction(scene),
-      scene.sceneDescription || script.scene1_description,
-      extractExtendPrompt(scene.manualVideoPrompt || "") ||
-        script.scene2_video_prompt ||
-        script.scene2_description,
+      `Base clip context, do not repeat this as the main action: ${baseContext}`,
+      `Continuation goal for this second 8 seconds: ${continuationGoal}`,
       "Strict object continuity: continue from the exact final frame only. Do not reset the scene. Do not resurrect, duplicate, or reintroduce any small prop that was moved away, placed aside, removed, hidden, or left behind in the base clip.",
       "No new random props may appear during the extension. If an unrelated tissue, cloth, bottle, box, food, tool, bag, watch, or cosmetic is not the uploaded product, it must not become visible again or become part of the action.",
-      "For the continuation, move from the first clip situation into the product benefit, demo, or showcase moment.",
+      "Do not repeat the base clip setup, pose, problem action, or first dialogue. This second clip must show a new action: product use, result, benefit, demo, or showcase ending.",
       "Show the adult character naturally touching, holding, opening, wearing, using, or pointing to the product when relevant.",
       "Do not switch the hero action to an unrelated object. Use the uploaded product only.",
       `The main adult character must speak this Malay line naturally with visible lip movement and matching expression: "${solutionDialogue}".`,
