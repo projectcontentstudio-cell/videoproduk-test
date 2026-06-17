@@ -1,7 +1,8 @@
+import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getGoogleAccessToken } from "@/lib/google-auth";
 import { storeGeneratedVideo } from "@/lib/generated-videos";
-import { downloadGcsObject } from "@/lib/gcs";
+import { downloadGcsObject, getConfiguredBucketName, uploadGcsObject } from "@/lib/gcs";
 import { storySceneLimit } from "@/lib/story-types";
 import type { StoryScript } from "@/lib/story-types";
 
@@ -200,13 +201,30 @@ async function saveVideoOutput(output: string) {
     buffer = Buffer.from(output, "base64");
   }
 
-  if (process.env.VERCEL) {
-    return `data:video/mp4;base64,${buffer.toString("base64")}`;
+  if (getConfiguredBucketName()) {
+    const objectName = `story-veo/${new Date()
+      .toISOString()
+      .slice(0, 10)}/${randomUUID()}.mp4`;
+    const gcsUri = await uploadGcsObject({
+      objectName,
+      contentType: "video/mp4",
+      body: buffer
+    });
+
+    return {
+      videoUrl: `/api/gcs-video?uri=${encodeURIComponent(gcsUri)}`,
+      gcsUri,
+      storage: "gcs"
+    };
   }
 
   const stored = await storeGeneratedVideo(buffer);
 
-  return `/api/generated-videos/${stored.id}`;
+  return {
+    videoUrl: `/api/generated-videos/${stored.id}`,
+    gcsUri: "",
+    storage: "local"
+  };
 }
 
 function makeLongDialogue(
@@ -310,13 +328,15 @@ export async function POST(request: NextRequest) {
       makeStoryVideoPrompt(body.script, sceneNumber)
     );
     const output = await pollVeoOperation(operationName);
-    const videoUrl = await saveVideoOutput(output);
+    const savedVideo = await saveVideoOutput(output);
 
     return NextResponse.json({
       jobId: operationName,
       status: "completed",
       result: {
-        videoUrl,
+        videoUrl: savedVideo.videoUrl,
+        gcsUri: savedVideo.gcsUri,
+        storage: savedVideo.storage,
         caption: body.script.caption,
         hashtags: body.script.hashtags,
         sceneNumber,

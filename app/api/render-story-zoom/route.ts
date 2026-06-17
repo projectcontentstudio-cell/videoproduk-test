@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { extname, join } from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 import { storeGeneratedVideo } from "@/lib/generated-videos";
+import { getConfiguredBucketName, uploadGcsObject } from "@/lib/gcs";
 import { storySceneDurationSeconds, storySceneLimit } from "@/lib/story-types";
 import type { StoryScript } from "@/lib/story-types";
 
@@ -268,6 +269,33 @@ function makeStableCutFilter(index: number, duration: number, motion: string) {
   return `[${index}:v]scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,setsar=1,fps=30,fade=t=in:st=0:d=${fadeDuration.toFixed(2)},fade=t=out:st=${fadeOutStart.toFixed(2)}:d=${fadeDuration.toFixed(2)}[v${index}]`;
 }
 
+async function storeStoryVideo(bytes: Buffer) {
+  if (getConfiguredBucketName()) {
+    const objectName = `story-renders/${new Date()
+      .toISOString()
+      .slice(0, 10)}/${randomUUID()}.mp4`;
+    const gcsUri = await uploadGcsObject({
+      objectName,
+      contentType: "video/mp4",
+      body: bytes
+    });
+
+    return {
+      videoUrl: `/api/gcs-video?uri=${encodeURIComponent(gcsUri)}`,
+      gcsUri,
+      storage: "gcs" as const
+    };
+  }
+
+  const stored = await storeGeneratedVideo(bytes);
+
+  return {
+    videoUrl: `/api/generated-videos/${stored.id}`,
+    gcsUri: "",
+    storage: "local" as const
+  };
+}
+
 export async function POST(request: NextRequest) {
   const workDir = join(tmpdir(), `videoproduk-story-${randomUUID()}`);
 
@@ -418,12 +446,14 @@ export async function POST(request: NextRequest) {
       throw new Error("Video MP4 kosong. Cuba render semula.");
     }
 
-    const stored = await storeGeneratedVideo(bytes);
+    const stored = await storeStoryVideo(bytes);
 
     return NextResponse.json({
       status: "completed",
       result: {
-        videoUrl: `/api/generated-videos/${stored.id}`,
+        videoUrl: stored.videoUrl,
+        gcsUri: stored.gcsUri,
+        storage: stored.storage,
         videoMimeType: "video/mp4",
         videoSize: bytes.length,
         caption: body.script.caption,
