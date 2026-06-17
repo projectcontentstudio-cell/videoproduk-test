@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getFriendlyErrorMessage } from "@/lib/friendly-error";
 import type { StoryScript } from "@/lib/story-types";
 import {
   getStoryType,
@@ -36,11 +37,7 @@ export function StoryScriptEditor() {
       setScript(data.script);
       localStorage.setItem(storyStorageKeys.script, JSON.stringify(data.script));
     } catch (generateError) {
-      setError(
-        generateError instanceof Error
-          ? generateError.message
-          : "Skrip cerita gagal dijana."
-      );
+      setError(getFriendlyErrorMessage(generateError, "Skrip cerita gagal dijana. Cuba sekali lagi."));
     } finally {
       setLoading(false);
     }

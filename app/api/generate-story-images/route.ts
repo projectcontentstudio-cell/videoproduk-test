@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateStoryImageWithGeminiReference } from "@/lib/story-gemini";
+import { getFriendlyErrorMessage } from "@/lib/friendly-error";
 import { storeGeneratedImage } from "@/lib/generated-assets";
 import { storySceneLimit } from "@/lib/story-types";
 import type { StoryScene } from "@/lib/story-types";
@@ -109,10 +110,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Image cerita gagal dijana."
+        error: getFriendlyErrorMessage(error, "Image cerita gagal dijana. Cuba sekali lagi.")
       },
       { status: 500 }
     );

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getFriendlyErrorMessage } from "@/lib/friendly-error";
 import { getGoogleAccessToken } from "@/lib/google-auth";
 
 export const runtime = "nodejs";
@@ -142,10 +143,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Suara cerita gagal dijana."
+        error: getFriendlyErrorMessage(error, "Suara cerita gagal dijana. Cuba sekali lagi.")
       },
       { status: 500 }
     );

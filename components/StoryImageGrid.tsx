@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { getFriendlyErrorMessage } from "@/lib/friendly-error";
 import type { StoryScript, StoryScene } from "@/lib/story-types";
 import {
   storySceneDurationSeconds,
@@ -136,13 +137,13 @@ export function StoryImageGrid() {
 
       setStatus(`Semua ${storySceneLimit} gambar siap.`);
     } catch (generateError) {
-      const message =
-        generateError instanceof Error
-          ? generateError.message
-          : "Image cerita gagal dijana.";
+      const message = getFriendlyErrorMessage(
+        generateError,
+        "Image cerita gagal dijana. Cuba sekali lagi."
+      );
       setError(
         message.includes("429") || message.toLowerCase().includes("resource exhausted")
-          ? "Server image sedang busy atau quota terlalu laju. Sistem sudah cuba retry. Tunggu sebentar dan tekan Jana Scene Ini untuk sambung dari scene yang gagal."
+          ? "Kuota atau server AI sedang penuh. Tunggu sebentar dan tekan Jana Scene Ini untuk sambung dari scene yang gagal."
           : message
       );
     } finally {

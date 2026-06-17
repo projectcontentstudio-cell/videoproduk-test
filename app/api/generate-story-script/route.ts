@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateStoryScript } from "@/lib/story-gemini";
+import { getFriendlyErrorMessage } from "@/lib/friendly-error";
 import { getStoryType } from "@/lib/story-types";
 import type { StoryTypeId } from "@/lib/story-types";
 
@@ -26,10 +27,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Skrip cerita gagal dijana."
+        error: getFriendlyErrorMessage(error, "Skrip cerita gagal dijana. Cuba sekali lagi.")
       },
       { status: 500 }
     );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { getFriendlyErrorMessage } from "@/lib/friendly-error";
 import type { StoryScript } from "@/lib/story-types";
 import {
   getStoryVoice,
@@ -447,7 +448,7 @@ export function StoryRenderPanel() {
         window.location.href = "/cerita/download";
       }, 700);
     } catch (renderError) {
-      setError(renderError instanceof Error ? renderError.message : "Render cerita gagal.");
+      setError(getFriendlyErrorMessage(renderError, "Render cerita gagal. Cuba sekali lagi."));
       setStatus("");
     } finally {
       setLoading(false);
