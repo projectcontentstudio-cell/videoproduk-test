@@ -4,14 +4,17 @@ import { useEffect, useState } from "react";
 import type { GeneratedScript } from "@/lib/gemini";
 import type { RenderJobResult } from "@/lib/render-types";
 import { getFriendlyErrorMessage } from "@/lib/friendly-error";
-import { storeVideoDataUrl } from "@/lib/client-video-store";
 import {
   canStartVideoGeneration,
   getUsageSnapshot,
-  trackSuccessfulVideoGeneration,
   type UsageSnapshot
 } from "@/lib/client-usage-store";
-import { saveVideoLibraryItem } from "@/lib/video-library";
+import {
+  continuePersistentVideoJob,
+  createPersistentVideoJob,
+  getPersistentVideoJob,
+  onVideoJobUpdate
+} from "@/lib/persistent-video-job";
 import { ProgressBar } from "./ProgressBar";
 
 type SelectedScene = {
@@ -312,6 +315,73 @@ export function RenderProgress() {
     localStorage.setItem("videoproduk_restore_preview", "true");
     setSelectedScene(getSelectedScene());
     setUsage(getUsageSnapshot());
+
+    const activeJob = getPersistentVideoJob();
+
+    if (activeJob?.status === "active") {
+      setState({
+        status: "processing",
+        jobId: activeJob.baseOperationName || activeJob.extendOperationName || "",
+        progress: activeJob.phase === "poll-extend" ? 64 : 22,
+        result: null,
+        error: ""
+      });
+      startLocalProgress();
+      void continuePersistentVideoJob();
+    }
+
+    return onVideoJobUpdate(() => {
+      const job = getPersistentVideoJob();
+
+      if (!job) {
+        return;
+      }
+
+      if (job.status === "active") {
+        setState((current) => ({
+          status: "processing",
+          jobId: job.baseOperationName || job.extendOperationName || current.jobId,
+          progress:
+            job.phase === "poll-extend"
+              ? Math.max(current.progress, 64)
+              : Math.max(current.progress, 18),
+          result: null,
+          error: ""
+        }));
+        return;
+      }
+
+      if (job.status === "done" && job.videoUrl) {
+        setUsage(getUsageSnapshot());
+        setState({
+          status: "done",
+          jobId: job.extendOperationName || job.baseOperationName || "",
+          progress: 100,
+          result: {
+            videoUrl: job.videoUrl,
+            baseVideoGcsUri: job.baseVideoGcsUri,
+            extendedVideoGcsUri: job.extendedVideoGcsUri,
+            watermarked: true,
+            downloadable: false
+          },
+          error: ""
+        });
+        setRedirectCountdown(3);
+        stopLocalProgress();
+        return;
+      }
+
+      if (job.status === "error") {
+        setState({
+          status: "error",
+          jobId: job.baseOperationName || job.extendOperationName || "",
+          progress: 0,
+          result: null,
+          error: job.error || "Video gagal dijana."
+        });
+        stopLocalProgress();
+      }
+    });
   }, []);
 
   async function startRender() {
@@ -367,106 +437,15 @@ export function RenderProgress() {
     startLocalProgress();
 
     try {
-      const response = await fetch("/api/manual-video", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          referenceSceneUrl: scene.imageUrl,
-          prompt: videoPrompt
-        })
-      });
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Render gagal dimulakan.");
-      }
-
-      setState((current) =>
-        current.status === "processing"
-          ? {
-              ...current,
-              progress: Math.max(current.progress, 58)
-            }
-          : current
-      );
-
-      let videoUrl = String(data.videoUrl || "");
-      let extendedVideoGcsUri: string | undefined;
-      const baseVideoGcsUri =
-        typeof data.baseVideoGcsUri === "string"
-          ? data.baseVideoGcsUri
-          : undefined;
-
-      if (!baseVideoGcsUri) {
-        throw new Error(
-          "Video 16 saat perlukan GCS_BUCKET_NAME supaya base video boleh disambung."
-        );
-      }
-
-      const extendResponse = await fetch("/api/extend-video", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          baseVideoGcsUri,
-          prompt: buildExtendVideoPrompt(normalizedScene, script)
-        })
-      });
-      const extendData = await extendResponse.json();
-
-      if (!extendResponse.ok) {
-        throw new Error(extendData.error || "Sambung video gagal.");
-      }
-
-      videoUrl = String(extendData.videoUrl || "");
-      extendedVideoGcsUri =
-        typeof extendData.extendedVideoGcsUri === "string"
-          ? extendData.extendedVideoGcsUri
-          : undefined;
-
-      const result: RenderJobResult = {
-        videoUrl,
-        baseVideoGcsUri,
-        extendedVideoGcsUri,
-        watermarked: true,
-        downloadable: false
-      };
-
-      const storedResult =
-        videoUrl.startsWith("data:video")
-          ? {
-              ...result,
-              videoUrl: "",
-              videoStoreKey: await storeVideoDataUrl(videoUrl)
-            }
-          : result;
-
-      localStorage.setItem(
-        "videoproduk_render_result",
-        JSON.stringify(storedResult)
-      );
-      saveVideoLibraryItem({
+      createPersistentVideoJob({
         title: localStorage.getItem("videoproduk_product_name") || "Video Produk",
-        type: "product",
-        videoUrl,
-        videoMimeType: "video/mp4",
+        referenceSceneUrl: scene.imageUrl,
+        basePrompt: videoPrompt,
+        extendPrompt: buildExtendVideoPrompt(normalizedScene, script),
         caption: script.caption,
-        hashtags: script.hashtags,
-        storage: extendedVideoGcsUri ? "gcs" : "local",
-        gcsUri: extendedVideoGcsUri
+        hashtags: script.hashtags
       });
-      setUsage(trackSuccessfulVideoGeneration());
-      setState({
-        status: "done",
-        jobId: data.operationName || "",
-        progress: 100,
-        result,
-        error: ""
-      });
-      setRedirectCountdown(3);
+      await continuePersistentVideoJob();
     } catch (error) {
       setState({
         status: "error",

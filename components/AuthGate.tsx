@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import { VideoJobStatusOverlay } from "./VideoJobStatusOverlay";
 
 const authStorageKey = "videoproduk_auth_ok";
 const lastActiveStorageKey = "videoproduk_last_active";
@@ -235,6 +236,7 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   return (
     <>
       <BackToHomeGuard />
+      <VideoJobStatusOverlay />
       {children}
     </>
   );
