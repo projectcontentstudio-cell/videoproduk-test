@@ -84,8 +84,26 @@ function validateServiceAccount(account: ServiceAccount) {
 }
 
 function parseServiceAccount() {
-  const rawJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  let rawJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
   serviceAccountParseError = "";
+
+  if (rawJson?.trim() === "{" || rawJson?.trim() === "") {
+    try {
+      const envFile = readFileSync(join(process.cwd(), ".env.local"), "utf8");
+      const marker = "GOOGLE_SERVICE_ACCOUNT_JSON=";
+      const markerIndex = envFile.indexOf(marker);
+
+      if (markerIndex >= 0) {
+        const afterMarker = envFile.slice(markerIndex + marker.length);
+        const nextEnvIndex = afterMarker.search(/\r?\n[A-Z0-9_]+=/);
+        rawJson = (
+          nextEnvIndex >= 0 ? afterMarker.slice(0, nextEnvIndex) : afterMarker
+        ).trim();
+      }
+    } catch {
+      // Hosted environments usually provide process.env directly.
+    }
+  }
 
   if (rawJson?.trim()) {
     try {

@@ -10,10 +10,10 @@ export default function ManualPage() {
           </a>
           <div className="flex max-w-full flex-wrap gap-2 sm:gap-3">
             <a
-              href="/story"
+              href="/cerita"
               className="inline-flex min-h-11 items-center justify-center rounded-full border border-border px-5 text-sm font-black text-white"
             >
-              Story Lab
+              Video Cerita
             </a>
             <a
               href="/upload"

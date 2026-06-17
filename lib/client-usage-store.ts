@@ -2,6 +2,9 @@
 
 const usageKey = "videoproduk_usage_v1";
 const betaVideoCreditsKey = "videoproduk_beta_video_credits";
+const betaVideoCreditsVersionKey = "videoproduk_beta_video_credits_version";
+const betaVideoCreditsVersion = "10-credit-beta";
+const betaDefaultVideoCredits = 10;
 
 export type UsageSnapshot = {
   imageCount: number;
@@ -58,7 +61,17 @@ function writeUsageRecord(record: {
 
 export function ensureBetaVideoCredits() {
   if (localStorage.getItem(betaVideoCreditsKey) === null) {
-    localStorage.setItem(betaVideoCreditsKey, "3");
+    localStorage.setItem(betaVideoCreditsKey, String(betaDefaultVideoCredits));
+  }
+
+  if (localStorage.getItem(betaVideoCreditsVersionKey) !== betaVideoCreditsVersion) {
+    const currentCredits = readNumber(betaVideoCreditsKey, 0);
+
+    if (currentCredits < betaDefaultVideoCredits) {
+      localStorage.setItem(betaVideoCreditsKey, String(betaDefaultVideoCredits));
+    }
+
+    localStorage.setItem(betaVideoCreditsVersionKey, betaVideoCreditsVersion);
   }
 }
 
@@ -102,4 +115,3 @@ export function trackSuccessfulVideoGeneration() {
 
   return getUsageSnapshot();
 }
-
