@@ -8,6 +8,7 @@ import {
   storySceneLimit,
   storyStorageKeys
 } from "@/lib/story-types";
+import { saveVideoLibraryItem } from "@/lib/video-library";
 
 const storyVideoDbName = "videoproduk_story_video";
 const storyVideoStoreName = "videos";
@@ -411,22 +412,37 @@ export function StoryRenderPanel() {
       }
 
       setProgress(100);
+      const renderResult = {
+        videoUrl: renderData.result.videoUrl,
+        videoMimeType: renderData.result.videoMimeType || "video/mp4",
+        videoSize: renderData.result.videoSize,
+        caption: script.caption,
+        hashtags: script.hashtags,
+        mock: false,
+        zoomOnly: false,
+        serverRender: true,
+        hasAudio: Boolean(renderData.result.hasAudio),
+        sceneAudio: sceneAudioUrls.length,
+        storage: renderData.result.storage,
+        gcsUri: renderData.result.gcsUri,
+        renderedAt: Date.now()
+      };
+
       localStorage.setItem(
         storyStorageKeys.render,
-        JSON.stringify({
-          videoUrl: renderData.result.videoUrl,
-          videoMimeType: renderData.result.videoMimeType || "video/mp4",
-          videoSize: renderData.result.videoSize,
-          caption: script.caption,
-          hashtags: script.hashtags,
-          mock: false,
-          zoomOnly: false,
-          serverRender: true,
-          hasAudio: Boolean(renderData.result.hasAudio),
-          sceneAudio: sceneAudioUrls.length,
-          renderedAt: Date.now()
-        })
+        JSON.stringify(renderResult)
       );
+      saveVideoLibraryItem({
+        title: script.title || "Video Cerita",
+        type: "story",
+        videoUrl: renderResult.videoUrl,
+        videoMimeType: renderResult.videoMimeType,
+        videoSize: renderResult.videoSize,
+        caption: script.caption,
+        hashtags: script.hashtags,
+        storage: renderResult.storage === "gcs" ? "gcs" : "local",
+        gcsUri: renderResult.gcsUri
+      });
       window.setTimeout(() => {
         window.location.href = "/cerita/download";
       }, 700);

@@ -22,6 +22,12 @@ export default function ManualPage() {
               Upload Flow
             </a>
             <a
+              href="/videos"
+              className="inline-flex min-h-11 items-center justify-center rounded-full border border-border px-5 text-sm font-black text-white"
+            >
+              List Video
+            </a>
+            <a
               href="/"
               className="inline-flex min-h-11 items-center justify-center rounded-full border border-border px-5 text-sm font-black text-white"
             >

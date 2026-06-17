@@ -11,6 +11,7 @@ import {
   trackSuccessfulVideoGeneration,
   type UsageSnapshot
 } from "@/lib/client-usage-store";
+import { saveVideoLibraryItem } from "@/lib/video-library";
 import { ProgressBar } from "./ProgressBar";
 
 type SelectedScene = {
@@ -447,6 +448,16 @@ export function RenderProgress() {
         "videoproduk_render_result",
         JSON.stringify(storedResult)
       );
+      saveVideoLibraryItem({
+        title: localStorage.getItem("videoproduk_product_name") || "Video Produk",
+        type: "product",
+        videoUrl,
+        videoMimeType: "video/mp4",
+        caption: script.caption,
+        hashtags: script.hashtags,
+        storage: extendedVideoGcsUri ? "gcs" : "local",
+        gcsUri: extendedVideoGcsUri
+      });
       setUsage(trackSuccessfulVideoGeneration());
       setState({
         status: "done",

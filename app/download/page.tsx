@@ -23,6 +23,12 @@ export default function DownloadPage() {
                 Upload Product
               </a>
               <a
+                href="/videos"
+                className="rounded-full border border-border px-3 py-1 text-xs font-bold text-slate-300 transition hover:border-primary hover:text-white"
+              >
+                List Video
+              </a>
+              <a
                 href="/render"
                 className="rounded-full border border-border px-3 py-1 text-xs font-bold text-slate-300 transition hover:border-primary hover:text-white"
               >

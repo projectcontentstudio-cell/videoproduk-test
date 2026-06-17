@@ -21,6 +21,12 @@ export default function UploadPage() {
             >
               Video Cerita
             </a>
+            <a
+              href="/videos"
+              className="rounded-full border border-border px-3 py-1 text-xs font-bold text-slate-300 transition hover:border-primary hover:text-white"
+            >
+              List Video
+            </a>
             <span className="rounded-full border border-border px-3 py-1 text-xs font-bold text-slate-300">
               Langkah 1/6
             </span>

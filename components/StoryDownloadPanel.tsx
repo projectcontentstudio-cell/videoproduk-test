@@ -236,6 +236,12 @@ export function StoryDownloadPanel() {
 
         <div className="flex flex-col gap-3 sm:flex-row">
           <a
+            href="/videos"
+            className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full border border-border px-5 text-sm font-black text-white"
+          >
+            List Video
+          </a>
+          <a
             href="/cerita/skrip"
             className="inline-flex min-h-11 flex-1 items-center justify-center rounded-full border border-border px-5 text-sm font-black text-white"
           >
