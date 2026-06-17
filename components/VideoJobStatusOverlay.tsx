@@ -32,6 +32,11 @@ function getPhaseText(job: PersistentVideoJob) {
 export function VideoJobStatusOverlay() {
   const [job, setJob] = useState<PersistentVideoJob | null>(null);
 
+  function goTo(path: string) {
+    clearPersistentVideoJob();
+    window.location.href = path;
+  }
+
   useEffect(() => {
     function syncJob() {
       setJob(getPersistentVideoJob());
@@ -64,18 +69,20 @@ export function VideoJobStatusOverlay() {
             List Video.
           </p>
           <div className="mt-5 grid gap-3">
-            <a
-              href="/download"
+            <button
+              type="button"
+              onClick={() => goTo("/download")}
               className="inline-flex min-h-12 items-center justify-center rounded-full bg-primary px-5 text-sm font-black text-slate-950"
             >
               Preview / Download
-            </a>
-            <a
-              href="/videos"
+            </button>
+            <button
+              type="button"
+              onClick={() => goTo("/videos")}
               className="inline-flex min-h-12 items-center justify-center rounded-full border border-border px-5 text-sm font-black text-white"
             >
               List Video
-            </a>
+            </button>
             <button
               type="button"
               onClick={clearPersistentVideoJob}
@@ -98,12 +105,13 @@ export function VideoJobStatusOverlay() {
             {job.error || "Video gagal dijana. Cuba lagi sebentar lagi."}
           </p>
           <div className="mt-5 grid gap-3">
-            <a
-              href="/render"
+            <button
+              type="button"
+              onClick={() => goTo("/render")}
               className="inline-flex min-h-12 items-center justify-center rounded-full bg-primary px-5 text-sm font-black text-slate-950"
             >
               Cuba Lagi
-            </a>
+            </button>
             <button
               type="button"
               onClick={clearPersistentVideoJob}
