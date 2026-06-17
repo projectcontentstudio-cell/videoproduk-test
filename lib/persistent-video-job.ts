@@ -3,6 +3,7 @@
 import type { RenderJobResult } from "@/lib/render-types";
 import { trackSuccessfulVideoGeneration } from "@/lib/client-usage-store";
 import { saveVideoLibraryItem } from "@/lib/video-library";
+import { makeUltraSafeVeoPrompt } from "@/lib/video-prompt-safety";
 
 export const videoJobStorageKey = "videoproduk_active_video_job_v1";
 const videoJobEventName = "videoproduk-video-job-update";
@@ -19,6 +20,8 @@ export type PersistentVideoJob = {
   hashtags?: string[];
   baseOperationName?: string;
   extendOperationName?: string;
+  baseSafetyFallbackUsed?: boolean;
+  extendSafetyFallbackUsed?: boolean;
   baseVideoGcsUri?: string;
   extendedVideoGcsUri?: string;
   videoUrl?: string;
@@ -90,6 +93,18 @@ export function createPersistentVideoJob(job: Omit<PersistentVideoJob, "id" | "s
 
   savePersistentVideoJob(next);
   return next;
+}
+
+function isSafetyBlock(error: unknown) {
+  const message = error instanceof Error ? error.message : String(error);
+  const lower = message.toLowerCase();
+
+  return (
+    lower.includes("safety") ||
+    lower.includes("responsible ai") ||
+    lower.includes("sensitive") ||
+    message.includes('"code":3')
+  );
 }
 
 async function callVideoJobApi(body: Record<string, unknown>) {
@@ -251,6 +266,38 @@ export async function continuePersistentVideoJob() {
 
         return job;
       } catch (error) {
+        if (
+          isSafetyBlock(error) &&
+          (job.phase === "start-base" || job.phase === "poll-base") &&
+          !job.baseSafetyFallbackUsed
+        ) {
+          savePersistentVideoJob({
+            ...job,
+            phase: "start-base",
+            basePrompt: makeUltraSafeVeoPrompt("base"),
+            baseOperationName: undefined,
+            baseSafetyFallbackUsed: true,
+            error: undefined
+          });
+          continue;
+        }
+
+        if (
+          isSafetyBlock(error) &&
+          (job.phase === "start-extend" || job.phase === "poll-extend") &&
+          !job.extendSafetyFallbackUsed
+        ) {
+          savePersistentVideoJob({
+            ...job,
+            phase: "start-extend",
+            extendPrompt: makeUltraSafeVeoPrompt("extend"),
+            extendOperationName: undefined,
+            extendSafetyFallbackUsed: true,
+            error: undefined
+          });
+          continue;
+        }
+
         savePersistentVideoJob({
           ...job,
           status: "error",
